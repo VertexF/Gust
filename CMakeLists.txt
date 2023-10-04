@@ -28,6 +28,9 @@ if(MSVC)
 
     set(VULKAN_LIB "${CMAKE_CURRENT_SOURCE_DIR}/vender/vulkan/lib/vulkan-1.lib")
     set(GLFW_LIB "${CMAKE_CURRENT_SOURCE_DIR}/vender/glfw/lib-vc2022/glfw3.lib")
+
+    #Set the location of the engine source.
+    set(ENGINE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc")
 endif()
 
 add_subdirectory(vender/spdlog)
@@ -42,14 +45,12 @@ add_compile_definitions("$<$<CONFIG:Debug>:GUST_DEBUG>")
 add_executable(Gust ${GUST_SOURCE})
 
 target_include_directories(Gust PUBLIC ${SPDLOG_INCLUDE_DIR} 
-                                       ${PRECOMPILED_HEADER} 
-                                       ${IMGUI_INCLUDE_DIR} 
                                        ${GML_INCLUDE_DIR} 
                                        ${GLFW_INCLUDE_DIR} 
                                        ${STB_INCLUDE_DIR} 
                                        ${VULKAN_INCLUDE_DIR} 
                                        ${OBJ_LOADER_INCLUDE_DIR} 
-                                       ${CMAKE_CURRENT_SOURCE_DIR})
+                                       ${ENGINE_INCLUDE})
 
 target_link_libraries(Gust PRIVATE spdlog STB TINY_OBJ ${GLFW_LIB} ${VULKAN_LIB})
 
