@@ -24,7 +24,6 @@ public:
     bool windowResize(WindowResizeEvent& resized);
 
 private:
-    bool _running = true;
     bool _minimized = false;
 
     float _lastFrameTime;

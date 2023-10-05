@@ -77,7 +77,7 @@ Window::Window(const WindowProperties& props)
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
             switch (action)
             {
-            case GLFW_PRESS:
+            case GLFW_REPEAT:
             {
                 //Tested to make sure 1 is the correct callback idea for repeated keys.
                 PressedKeyEvent repeatKeyEvent(key, 1);

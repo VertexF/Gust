@@ -1,6 +1,8 @@
 #include "Game2D.h"
 
 #include "Core/Logger.h"
+#include "Core/KeyCodes.h"
+#include "Core/Global.h"
 
 namespace game 
 {
@@ -33,12 +35,16 @@ void Game2D::handleEvent(Gust::Event& ent)
 
 bool Game2D::keyPressed(Gust::PressedKeyEvent& ent) 
 {
+    GUST_INFO("Keycode is: {0}", ent.getKeyCode());
     return false;
 }
 
 bool Game2D::keyReleased(Gust::ReleasedKeyEvent& ent) 
 {
-    GUST_INFO("Keycode is: {0}", ent.getKeyCode());
+    if (ent.getKeyCode() == GUST_KEY_ESCAPE)
+    {
+        Global::getInstance().running = false;
+    }
     return false;
 }
 

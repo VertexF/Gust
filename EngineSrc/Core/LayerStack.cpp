@@ -6,33 +6,62 @@
 namespace Gust 
 {
 
+LayerStack::LayerStack() : _layerIteratorIndex(0)
+{
+}
+
 LayerStack::~LayerStack() 
 {
-    while (_layers.empty())
+    for (Layer *layer : _layers)
     {
-        //Make sure this doesn't crash things.
-        delete _layers.top();
-        _layers.pop();
+        delete layer;
     }
 }
 
 void LayerStack::pushLayer(Layer* layer) 
 {
+    _layers.emplace(_layers.begin() + _layerIteratorIndex, layer);
+    _layerIteratorIndex++;
     layer->attach();
-    _layers.push(layer);
 }
 
-void LayerStack::popLayer() 
+void LayerStack::popLayer(Layer* layer)
 {
-    if (_layers.empty())
+    auto it = std::find(_layers.begin(), _layers.begin() + _layerIteratorIndex, layer);
+    if (it == _layers.end())
     {
         GUST_CRITICAL("You are trying to pop an empty list");
         return;
     }
 
-    _layers.top()->detach();
-    delete _layers.top();
-    _layers.pop();
+    layer->detach();
+    _layers.erase(it);
+    _layerIteratorIndex--;
+}
+
+void LayerStack::attachTopLayer() 
+{
+    _layers.back()->attach();
+}
+
+std::vector<Layer*>::iterator LayerStack::begin() 
+{
+    return _layers.begin();
+}
+
+std::vector<Layer*>::iterator LayerStack::end() 
+{
+    return _layers.end();
+}
+
+std::vector<Layer*>::reverse_iterator LayerStack::rbegin() 
+{
+    return _layers.rbegin();
+}
+
+std::vector<Layer*>::reverse_iterator LayerStack::rend() 
+{
+    return _layers.rend();
 }
 
 Layer* LayerStack::top() 
@@ -42,7 +71,7 @@ Layer* LayerStack::top()
         GUST_CRITICAL("You are trying to get the top layer of the layer stack on an empty list");
         return nullptr;
     }
-    return _layers.top();
+    return _layers.back();
 }
 
 bool LayerStack::empty() const 

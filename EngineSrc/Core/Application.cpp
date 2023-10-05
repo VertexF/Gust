@@ -6,6 +6,7 @@
 
 #include "Game/Game2D.h"
 #include "Window.h"
+#include "Global.h"
 
 namespace Gust 
 {
@@ -27,13 +28,21 @@ void Application::handleEvent(Event& ent)
     eventDispatcher.dispatch<WindowClosedEvent>(std::bind(&Application::windowClosed, this, std::placeholders::_1));
     eventDispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::windowResize, this, std::placeholders::_1));
 
-    _layers.top()->handleEvent(ent);
+    for (auto it = _layers.rbegin(); it != _layers.rend(); it++) 
+    {
+        if (ent.isHandled) 
+        {
+            break;
+        }
+
+        (*it)->handleEvent(ent);
+    }
 }
 
 void Application::run() 
 {
     _layers.pushLayer(new game::Game2D());
-    while (_running) 
+    while (Global::getInstance().running) 
     {
         //Do the stack.
         float time = static_cast<float>(glfwGetTime());
@@ -42,7 +51,10 @@ void Application::run()
 
         if (_minimized)
         {
-            _layers.top()->update(timestep);
+            for (Layer *layer : _layers) 
+            {
+                layer->update(timestep);
+            }
         }
 
         _window->update();
@@ -51,7 +63,7 @@ void Application::run()
 
 bool Application::windowClosed(WindowClosedEvent& closed) 
 {
-    _running = false;
+    Global::getInstance().running = false;
     return true;
 }
 
