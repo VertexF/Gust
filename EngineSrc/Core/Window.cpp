@@ -16,6 +16,7 @@
 #include "Events/ApplicationEvent.h"
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
+#include "Renderer/Vulkan.h"
 
 namespace Gust 
 {
@@ -39,18 +40,6 @@ Window::Window(const WindowProperties& props)
 
     //Abstract away the windows implementation?
     _window = glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr);
-
-    //Optional setup but good for optimiation
-    VkApplicationInfo appInfo{};
-    //These sType's define the type of struct we are setting up.
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Vulkan Game Engine";
-    //Setup version
-    appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
-    appInfo.pEngineName = "Gust";
-    //Setup version
-    appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     glfwSetWindowUserPointer(_window, &_windowData);
 
@@ -138,6 +127,8 @@ Window::Window(const WindowProperties& props)
             MouseMovedEvent movedEvent(static_cast<float>(x), static_cast<float>(y));
             windowData.eventCallback(movedEvent);
         });
+
+    _vulkan = new Vulkan(_windowData.title, _window);
 }
 
 void Window::setCallbackFunction(const EventCallbackFunc& callback)

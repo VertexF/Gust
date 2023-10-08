@@ -28,4 +28,11 @@ private:
 #define GUST_INFO(...) Gust::Logger::getLogger()->info(__VA_ARGS__)
 #define GUST_TRACE(...) Gust::Logger::getLogger()->trace(__VA_ARGS__)
 
+#define GUST_DEBUG 1
+#ifdef GUST_DEBUG
+    #define GUST_CORE_ASSERT(condition, ...) { if((condition)) { GUST_CRITICAL("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
+#else
+    #define GUST_CORE_ASSERT(condition, ...)
+#endif
+
 #endif // !LOGGER_HDR

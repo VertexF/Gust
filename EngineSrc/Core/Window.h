@@ -26,8 +26,11 @@ struct WindowProperties
     }
 };
 
+class Vulkan;
+
 class Window 
 {
+
 public:
     using EventCallbackFunc = std::function<void(Event&)>;
 
@@ -59,6 +62,7 @@ private:
     void drawFrame();
 
     GLFWwindow* _window;
+    Vulkan* _vulkan;
 };
 
 }

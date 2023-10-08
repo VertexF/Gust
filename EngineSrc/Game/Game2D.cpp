@@ -26,7 +26,6 @@ void Game2D::update(Gust::TimeStep timeStep)
 
 void Game2D::handleEvent(Gust::Event& ent) 
 {
-    //Handle user input TODO: Handle at least the Esc key.
     Gust::EventDispatcher dispatcher(ent);
     dispatcher.dispatch<Gust::PressedKeyEvent>(std::bind(&Game2D::keyPressed, this, std::placeholders::_1));
     dispatcher.dispatch<Gust::ReleasedKeyEvent>(std::bind(&Game2D::keyReleased, this, std::placeholders::_1));
@@ -41,6 +40,7 @@ bool Game2D::keyPressed(Gust::PressedKeyEvent& ent)
 
 bool Game2D::keyReleased(Gust::ReleasedKeyEvent& ent) 
 {
+    GUST_INFO("Keycode is: {0}", ent.getKeyCode());
     if (ent.getKeyCode() == GUST_KEY_ESCAPE)
     {
         Global::getInstance().running = false;
