@@ -21,24 +21,19 @@ if(MSVC)
     set(SPDLOG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/spdlog/include")
     set(GML_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/glm")
     set(STB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/stb")
-    set(OBJ_LOADER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/tiny_obj_loader")
     #I need to uses a config file that is generated here. So it's not a 
     #mistake it's a binrary directory.
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${GUST_SOURCE})
 
     set(VULKAN_LIB "${CMAKE_CURRENT_SOURCE_DIR}/vender/vulkan/lib/vulkan-1.lib")
-    set(GLFW_LIB "${CMAKE_CURRENT_SOURCE_DIR}/vender/glfw/lib-vc2022/glfw3.lib")
 
     #Set the location of the engine source.
     set(ENGINE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc")
 endif()
 
+#spdlog has it's own CMake file that I haven't touched so it can remain in the vender base.
 add_subdirectory(vender/spdlog)
-add_subdirectory(vender/stb)
-
-#Only here for testing reasons TODO: DELETE
-add_library(TINY_OBJ STATIC "${CMAKE_CURRENT_SOURCE_DIR}/vender/tiny_obj_loader/tiny_obj_loader.h"
-                            "${CMAKE_CURRENT_SOURCE_DIR}/vender/tiny_obj_loader/tiny_obj_loader.cpp")
+add_subdirectory(vender)
 
 add_compile_definitions("$<$<CONFIG:Debug>:GUST_DEBUG>")
 
@@ -49,10 +44,9 @@ target_include_directories(Gust PUBLIC ${SPDLOG_INCLUDE_DIR}
                                        ${GLFW_INCLUDE_DIR} 
                                        ${STB_INCLUDE_DIR} 
                                        ${VULKAN_INCLUDE_DIR} 
-                                       ${OBJ_LOADER_INCLUDE_DIR} 
                                        ${ENGINE_INCLUDE})
 
-target_link_libraries(Gust PRIVATE spdlog STB TINY_OBJ ${GLFW_LIB} ${VULKAN_LIB})
+target_link_libraries(Gust PRIVATE spdlog STB GLFW ${VULKAN_LIB})
 
 target_compile_options(Gust PRIVATE
 					   $<$<CXX_COMPILER_ID:MSVC>:/W4>

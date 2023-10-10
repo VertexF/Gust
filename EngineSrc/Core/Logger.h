@@ -22,16 +22,21 @@ private:
 
 }
 
-#define GUST_CRITICAL(...) Gust::Logger::getLogger()->critical(__VA_ARGS__)
-#define GUST_ERROR(...) Gust::Logger::getLogger()->error(__VA_ARGS__)
-#define GUST_WARN(...) Gust::Logger::getLogger()->warn(__VA_ARGS__)
-#define GUST_INFO(...) Gust::Logger::getLogger()->info(__VA_ARGS__)
-#define GUST_TRACE(...) Gust::Logger::getLogger()->trace(__VA_ARGS__)
-
+//NOTE that is is also defined the in the CMake file.
 #define GUST_DEBUG 1
 #ifdef GUST_DEBUG
+    #define GUST_CRITICAL(...) Gust::Logger::getLogger()->critical(__VA_ARGS__)
+    #define GUST_ERROR(...) Gust::Logger::getLogger()->error(__VA_ARGS__)
+    #define GUST_WARN(...) Gust::Logger::getLogger()->warn(__VA_ARGS__)
+    #define GUST_INFO(...) Gust::Logger::getLogger()->info(__VA_ARGS__)
+    #define GUST_TRACE(...) Gust::Logger::getLogger()->trace(__VA_ARGS__)
     #define GUST_CORE_ASSERT(condition, ...) { if((condition)) { GUST_CRITICAL("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
 #else
+    #define GUST_CRITICAL(...) 
+    #define GUST_ERROR(...) 
+    #define GUST_WARN(...) 
+    #define GUST_INFO(...) 
+    #define GUST_TRACE(...) 
     #define GUST_CORE_ASSERT(condition, ...)
 #endif
 
