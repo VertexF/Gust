@@ -1,2 +1,2 @@
-D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe GameSrc\Resources\Assets\Shaders\simple_shader.vert -o GameSrc\Resources\Assets\Shaders\simple_shader.vert.spv
-D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe GameSrc\Resources\Assets\Shaders\simple_shader.frag -o GameSrc\Resources\Assets\Shaders\simple_shader.frag.spv
+D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\simple_shader.vert -o EngineSrc\Assets\Shaders\simple_shader.vert.spv
+D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\simple_shader.frag -o EngineSrc\Assets\Shaders\simple_shader.frag.spv

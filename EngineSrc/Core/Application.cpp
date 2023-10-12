@@ -59,6 +59,8 @@ void Application::run()
 
         _window->update();
     }
+
+    _window->waitDevice();
 }
 
 bool Application::windowClosed(WindowClosedEvent& closed) 

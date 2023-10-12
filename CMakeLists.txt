@@ -11,8 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(GLOB_RECURSE GUST_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.h"
-	"${CMAKE_CURRENT_SOURCE_DIR}/GameSrc/*.vert"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GameSrc/*.frag"
+	"${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.frag"
 )
 
 if(MSVC)

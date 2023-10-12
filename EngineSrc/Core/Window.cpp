@@ -146,6 +146,11 @@ void Window::update()
     drawFrame();
 }
 
+void Window::waitDevice()
+{
+    _vulkan->waitDevice();
+}
+
 void Window::drawFrame()
 {
     //TODO: add the vulkan stuff.
