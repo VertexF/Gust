@@ -10,6 +10,8 @@ public:
         return instance;
     }
 
+    //TODO: Add the global access to GLFWwindow here singleton style.
+
     bool running;
 private:
     Global() : running(true)

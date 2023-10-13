@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Vertex.h"
+#include "Core/TimeStep.h"
 
 namespace 
 {
@@ -50,6 +51,7 @@ public:
 
     void waitDevice();
     void recreateSwapChain(GLFWwindow* window);
+    void drawFrame(GLFWwindow *window, TimeStep timestep);
 
 private:
     void initVulkan(const char* title, GLFWwindow* window);
@@ -69,6 +71,16 @@ private:
     void createGraphicsPipeline();
     void createCommandPool();
     void createTextureImage();
+    void createTextureImageView();
+    void createTextureSampler();
+    void createGeometry();
+    void createVertexBuffer();
+    void createIndexBuffer();
+    void createUniformBuffers();
+    void createDescriptorPool();
+    void createDescriptorSets();
+    void createCommandBuffer();
+    void createSyncObjects();
 
     void swapChainCleanUp();
 
@@ -106,6 +118,9 @@ private:
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommand(VkCommandBuffer commandBuffer);
     void copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize size);
+
+    void updateUniformBuffers(uint32_t currentImage, TimeStep timestep);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     static std::vector<char> readFile(const std::string &filename);
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
@@ -150,13 +165,35 @@ private:
 
     VkImage _textureImage;
     VkDeviceMemory _textureImageMemory;
+    VkImageView _textureImageView;
+    VkSampler _textureSampler;
+
+    VkBuffer _vertexBuffer;
+    VkDeviceMemory _vertexBufferMemory;
+    VkBuffer _indexBuffer;
+    VkDeviceMemory _indexBufferMemory;
+    std::vector<VkBuffer> _uniformBuffers;
+    std::vector<VkDeviceMemory> _uniformBufferMemory;
+    std::vector<void*> _uniformBufferMapped;
+
+    VkDescriptorPool _descriptorPool;
+    std::vector<VkDescriptorSet> _descriptorSets;
+
+    std::vector<VkCommandBuffer> _commandBuffers;
+
+    std::vector<VkSemaphore> _imageAvailableSemaphores;
+    std::vector<VkSemaphore> _renderFinishedSemaphores;
+    std::vector<VkFence> _inFlightFence;
 
     //Vulkan setting data
     VkSampleCountFlagBits _msaaSamples;
     uint32_t _mipLevels;
+    uint32_t _currentFrame;
 
     //GeometryData
     std::vector<Vertex> _vertices;
+    std::vector<uint32_t> _indices;
+    float _time;
 };
 
 } //GUST

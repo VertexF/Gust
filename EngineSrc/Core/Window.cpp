@@ -6,6 +6,9 @@
 #include "Events/KeyEvent.h"
 #include "Renderer/Vulkan.h"
 
+//TODO: remove this file after the renderer works.
+#include "Core/TimeStep.h"
+
 namespace Gust 
 {
 
@@ -139,11 +142,12 @@ bool Window::isVSync() const
     return _windowData.vSync;
 }
 
-void Window::update()
+//TODO: remove this time step too.
+void Window::update(TimeStep timestep)
 {
     glfwPollEvents();
 
-    drawFrame();
+    drawFrame(timestep);
 }
 
 void Window::waitDevice()
@@ -151,9 +155,11 @@ void Window::waitDevice()
     _vulkan->waitDevice();
 }
 
-void Window::drawFrame()
+//TODO: remvoe the drawFrame function from Window.
+void Window::drawFrame(TimeStep timestep)
 {
-    //TODO: add the vulkan stuff.
+    //TODO: move this to the Game2D layer.
+    _vulkan->drawFrame(_window, timestep);
 }
 
 } //GUST

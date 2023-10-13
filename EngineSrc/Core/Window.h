@@ -8,6 +8,7 @@
 #include <functional>
 
 #include "Events/Event.h"
+#include "Core/TimeStep.h"
 
 namespace Gust 
 {
@@ -56,11 +57,11 @@ public:
     int getHeight() const;
     bool isVSync() const;
 
-    void update();
+    void update(TimeStep timestep);
     void waitDevice();
 
 private:
-    void drawFrame();
+    void drawFrame(TimeStep timestep);
 
     GLFWwindow* _window;
     Vulkan* _vulkan;

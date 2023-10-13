@@ -57,7 +57,8 @@ void Application::run()
             }
         }
 
-        _window->update();
+        //TODO: Again remove the rendering outside of this function.
+        _window->update(timestep);
     }
 
     _window->waitDevice();

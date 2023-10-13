@@ -21,7 +21,8 @@ void Game2D::detach()
 
 void Game2D::update(Gust::TimeStep timeStep) 
 {
-    //TODO: Update and render.
+    //TODO: Move the drawFrame in here!
+    //renderer->drawFrame(timeStep); - Note just a suggestion but we don't want to pass around _window handle.
 }
 
 void Game2D::handleEvent(Gust::Event& ent) 

@@ -14,7 +14,7 @@ namespace Gust
         operator float() const { return _time; }
 
         float getSeconds() const { return _time; }
-        float getMilliSecounds() const { return _time; }
+        float getMilliSecounds() const { return _time * 1000.f; }
 
     private:
         float _time;
