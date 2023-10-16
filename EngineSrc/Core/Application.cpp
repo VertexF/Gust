@@ -49,7 +49,7 @@ void Application::run()
         TimeStep timestep(time - _lastFrameTime);
         _lastFrameTime = time;
 
-        if (_minimized)
+        if (_minimized == false)
         {
             for (Layer *layer : _layers) 
             {
@@ -57,10 +57,10 @@ void Application::run()
             }
         }
 
-        //TODO: Again remove the rendering outside of this function.
-        _window->update(timestep);
+        _window->update();
     }
 
+    //TODO: Make this work outside.
     _window->waitDevice();
 }
 

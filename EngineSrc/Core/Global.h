@@ -1,6 +1,12 @@
 #ifndef GLOBAL_HDR
 #define GLOBAL_HDR
 
+//Needed to make the GLEW linking is linking to the static version.
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+#include "Logger.h"
+
 class Global
 {
 public:
@@ -11,12 +17,24 @@ public:
     }
 
     //TODO: Add the global access to GLFWwindow here singleton style.
+    GLFWwindow* getWindow() const
+    {
+        GUST_CORE_ASSERT(_window == nullptr, "The window is null, you need to set the GLFWwindow before you use it.")
+        return _window; 
+    }
+
+    void setWindow(GLFWwindow *window) 
+    {
+        _window = window;
+    }
 
     bool running;
 private:
-    Global() : running(true)
+    Global() : running(true), _window(nullptr)
     {
     }
+
+    GLFWwindow* _window;
 
 public:
     Global(Global const& rhs) = delete;

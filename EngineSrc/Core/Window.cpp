@@ -1,13 +1,11 @@
 #include "Window.h"
 
 #include "Core/Logger.h"
+#include "Core/Global.h"
 #include "Events/ApplicationEvent.h"
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
 #include "Renderer/Vulkan.h"
-
-//TODO: remove this file after the renderer works.
-#include "Core/TimeStep.h"
 
 namespace Gust 
 {
@@ -30,11 +28,12 @@ Window::Window(const WindowProperties& props)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     //Abstract away the windows implementation?
-    _window = glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr);
+    Global::getInstance().setWindow(glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr));
+    //_window = glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr);
 
-    glfwSetWindowUserPointer(_window, &_windowData);
+    glfwSetWindowUserPointer(Global::getInstance().getWindow(), &_windowData);
 
-    glfwSetWindowSizeCallback(_window, [](GLFWwindow* window, int width, int height) 
+    glfwSetWindowSizeCallback(Global::getInstance().getWindow(), [](GLFWwindow* window, int width, int height)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
             windowData.width = width;
@@ -44,7 +43,7 @@ Window::Window(const WindowProperties& props)
             windowData.eventCallback(windowResizeEvent);
         });
 
-    glfwSetWindowCloseCallback(_window, [](GLFWwindow* window)
+    glfwSetWindowCloseCallback(Global::getInstance().getWindow(), [](GLFWwindow* window)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
 
@@ -52,7 +51,7 @@ Window::Window(const WindowProperties& props)
             windowData.eventCallback(windowCloseEvent);
         });
 
-    glfwSetKeyCallback(_window, [](GLFWwindow* window, int key, int scanCode, int action, int mods) 
+    glfwSetKeyCallback(Global::getInstance().getWindow(), [](GLFWwindow* window, int key, int scanCode, int action, int mods)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
             switch (action)
@@ -74,7 +73,7 @@ Window::Window(const WindowProperties& props)
         });
 
     //This is used for typing in characters.
-    glfwSetCharCallback(_window, [](GLFWwindow* window, uint32_t characters)
+    glfwSetCharCallback(Global::getInstance().getWindow(), [](GLFWwindow* window, uint32_t characters)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
 
@@ -82,7 +81,7 @@ Window::Window(const WindowProperties& props)
             windowData.eventCallback(typedKeyPress);
         });
 
-    glfwSetMouseButtonCallback(_window, [](GLFWwindow* window, int button, int action, int mods) 
+    glfwSetMouseButtonCallback(Global::getInstance().getWindow(), [](GLFWwindow* window, int button, int action, int mods)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
 
@@ -103,7 +102,7 @@ Window::Window(const WindowProperties& props)
             };
         });
 
-    glfwSetScrollCallback(_window, [](GLFWwindow* window, double x, double y)
+    glfwSetScrollCallback(Global::getInstance().getWindow(), [](GLFWwindow* window, double x, double y)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
 
@@ -111,15 +110,13 @@ Window::Window(const WindowProperties& props)
             windowData.eventCallback(scrollEvent);
         });
 
-    glfwSetCursorPosCallback(_window, [](GLFWwindow* window, double x, double y)
+    glfwSetCursorPosCallback(Global::getInstance().getWindow(), [](GLFWwindow* window, double x, double y)
         {
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
 
             MouseMovedEvent movedEvent(static_cast<float>(x), static_cast<float>(y));
             windowData.eventCallback(movedEvent);
         });
-
-    _vulkan = new Vulkan(_windowData.title, _window);
 }
 
 void Window::setCallbackFunction(const EventCallbackFunc& callback)
@@ -142,24 +139,14 @@ bool Window::isVSync() const
     return _windowData.vSync;
 }
 
-//TODO: remove this time step too.
-void Window::update(TimeStep timestep)
+void Window::update()
 {
     glfwPollEvents();
-
-    drawFrame(timestep);
 }
 
 void Window::waitDevice()
 {
-    _vulkan->waitDevice();
-}
-
-//TODO: remvoe the drawFrame function from Window.
-void Window::drawFrame(TimeStep timestep)
-{
-    //TODO: move this to the Game2D layer.
-    _vulkan->drawFrame(_window, timestep);
+    //_vulkan->waitDevice();
 }
 
 } //GUST

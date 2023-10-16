@@ -43,25 +43,24 @@ namespace Gust
 //The plan is with this class is have everything in it to render a square, then refactor everything afterwards.
 // All to make sure I'm not breaking things after things are moved.
 //TODO: Refactor class.
-//TODO: Render a square.
 class Vulkan 
 {
 public:
-    Vulkan(const char* title, GLFWwindow* window);
+    Vulkan(const char* title);
 
     void waitDevice();
-    void recreateSwapChain(GLFWwindow* window);
-    void drawFrame(GLFWwindow *window, TimeStep timestep);
+    void recreateSwapChain();
+    void drawFrame(TimeStep timestep);
 
 private:
-    void initVulkan(const char* title, GLFWwindow* window);
+    void initVulkan(const char* title);
 
     void createInstance(const char* title);
     void setupDebugMessenger();
-    void createSurface(GLFWwindow* window);
+    void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
-    void createSwapChain(GLFWwindow* window);
+    void createSwapChain();
     void createImageView();
     void createRenderPass();
     void createColourResources();
@@ -100,7 +99,7 @@ private:
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avaiablePresentModes);
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, 
                       VkDeviceMemory &bufferMemory);

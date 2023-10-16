@@ -6,6 +6,7 @@
 #include "Events/KeyEvent.h"
 #include "Core/TimeStep.h"
 #include "Core/Layer.h"
+#include "Renderer/Vulkan.h"
 
 namespace game 
 {
@@ -24,6 +25,8 @@ public:
     bool keyPressed(Gust::PressedKeyEvent& ent);
     bool keyReleased(Gust::ReleasedKeyEvent& ent);
     bool mouseReleased(Gust::MouseButtonReleasedEvent& ent);
+private:
+    Gust::Vulkan* _vulkan;
 };
 
 }

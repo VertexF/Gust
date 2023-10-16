@@ -8,6 +8,7 @@ namespace game
 {
 Game2D::Game2D() : Gust::Layer("Game World")
 {
+    _vulkan = new Gust::Vulkan("Gust Engine");
 }
 
 void Game2D::attach() 
@@ -21,8 +22,7 @@ void Game2D::detach()
 
 void Game2D::update(Gust::TimeStep timeStep) 
 {
-    //TODO: Move the drawFrame in here!
-    //renderer->drawFrame(timeStep); - Note just a suggestion but we don't want to pass around _window handle.
+    _vulkan->drawFrame(timeStep);
 }
 
 void Game2D::handleEvent(Gust::Event& ent) 

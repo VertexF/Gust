@@ -9,6 +9,7 @@ layout(location = 0) out vec4 outColour;
 
 void main()
 {
+    outColour = texture(texSampler, fragTexCoord) * vec4(fragColour, 1.0);
     //outColour = texture(texSampler, fragTexCoord);
-    outColour = vec4(fragColour * texture(texSampler, fragTexCoord).rgb, 1.0);
+    //outColour = vec4(fragColour * texture(texSampler, fragTexCoord).rgb, 1.0);
 }

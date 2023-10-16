@@ -14,6 +14,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Core/Logger.h"
+#include "Core/Global.h"
+
 #include "Core/TimeStep.h"
 
 namespace
@@ -66,9 +68,9 @@ struct UniformBufferObject
 namespace Gust
 {
 
-Vulkan::Vulkan(const char* title, GLFWwindow* window) : _mipLevels(0), _currentFrame(0), _time(0.f)
+Vulkan::Vulkan(const char* title) : _mipLevels(0), _currentFrame(0), _time(0.f)
 {
-    initVulkan(title, window);
+    initVulkan(title);
 }
 
 void Vulkan::waitDevice()
@@ -77,15 +79,15 @@ void Vulkan::waitDevice()
 }
 
 
-void Vulkan::recreateSwapChain(GLFWwindow* window)
+void Vulkan::recreateSwapChain()
 {
     int width = 0;
     int height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
+    glfwGetFramebufferSize(Global::getInstance().getWindow(), &width, &height);
 
     while (width == 0 || height == 0) 
     {
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(Global::getInstance().getWindow(), &width, &height);
         glfwWaitEvents();
     }
 
@@ -93,7 +95,7 @@ void Vulkan::recreateSwapChain(GLFWwindow* window)
 
     swapChainCleanUp();
 
-    createSwapChain(window);
+    createSwapChain();
     createImageView();
     createRenderPass();
 
@@ -102,8 +104,11 @@ void Vulkan::recreateSwapChain(GLFWwindow* window)
     createFramebuffer();
 }
 
-void Vulkan::drawFrame(GLFWwindow* window, TimeStep timestep)
+void Vulkan::drawFrame(TimeStep timestep)
 {
+    //Begin frame render would be this function.
+    updateUniformBuffers(_currentFrame, timestep);
+
     vkWaitForFences(_logicalDevice, 1, &_inFlightFence[_currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex = -1;
@@ -112,13 +117,11 @@ void Vulkan::drawFrame(GLFWwindow* window, TimeStep timestep)
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) 
     {
-        recreateSwapChain(window);
+        recreateSwapChain();
         return;
     }
     GUST_CORE_ASSERT(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image.");
-
-    updateUniformBuffers(_currentFrame, timestep);
-
+    
     vkResetFences(_logicalDevice, 1, &_inFlightFence[_currentFrame]);
 
     vkResetCommandBuffer(_commandBuffers[_currentFrame], 0);
@@ -157,7 +160,7 @@ void Vulkan::drawFrame(GLFWwindow* window, TimeStep timestep)
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
     {
-        recreateSwapChain(window);
+        recreateSwapChain();
         return;
     }
 
@@ -166,16 +169,16 @@ void Vulkan::drawFrame(GLFWwindow* window, TimeStep timestep)
     _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Vulkan::initVulkan(const char* title, GLFWwindow* window)
+void Vulkan::initVulkan(const char* title)
 {
     createInstance(title);
     setupDebugMessenger();
 
-    createSurface(window);
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
 
-    createSwapChain(window);
+    createSwapChain();
     createImageView();
     createRenderPass();
 
@@ -197,10 +200,11 @@ void Vulkan::initVulkan(const char* title, GLFWwindow* window)
 
     createVertexBuffer();
     createIndexBuffer();
-    createUniformBuffers();
 
+    createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
+
     createCommandBuffer();
 
     createSyncObjects();
@@ -214,7 +218,7 @@ void Vulkan::createInstance(const char *title)
     }
 
     //Optional setup but good for optimiation
-    VkApplicationInfo appInfo{};
+    VkApplicationInfo appInfo = {};
     //These sType's define the type of struct we are setting up.
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = title;
@@ -264,13 +268,13 @@ void Vulkan::setupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    VkResult result = ::createDebugUtilMessagerEXT(_instance, &createInfo, nullptr, &_debugMessenger);
+    VkResult result = createDebugUtilMessagerEXT(_instance, &createInfo, nullptr, &_debugMessenger);
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Vulkan failed to create debug messager info.");
 }
 
-void Vulkan::createSurface(GLFWwindow* window)
+void Vulkan::createSurface()
 {
-    VkResult result = glfwCreateWindowSurface(_instance, window, nullptr, &_surface);
+    VkResult result = glfwCreateWindowSurface(_instance, Global::getInstance().getWindow(), nullptr, &_surface);
 
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Vulkan failed to create window surface.")
 }
@@ -344,13 +348,13 @@ void Vulkan::createLogicalDevice()
     vkGetDeviceQueue(_logicalDevice, indices.presentFamily.value(), 0, &_presentQueue);
 }
 
-void Vulkan::createSwapChain(GLFWwindow* window)
+void Vulkan::createSwapChain()
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_physicalDevice);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extents = chooseSwapExtent(swapChainSupport.capabilities, window);
+    VkExtent2D extents = chooseSwapExtent(swapChainSupport.capabilities);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) 
@@ -702,7 +706,7 @@ void Vulkan::createTextureImage()
     int texWidth = -1;
     int texHeight = -1;
     int texChannel = -1;
-    stbi_uc* pixels = stbi_load("Assets/Textures/test.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("Assets/Textures/3.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     _mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     GUST_CORE_ASSERT(pixels == nullptr, "Failed to load texture image.");
@@ -769,10 +773,10 @@ void Vulkan::createGeometry()
 {
     _vertices = 
     {
-        { {-1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f }},
-        { { 1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f }},
-        { { 1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f }},
-        { {-1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f }}
+        { {-1.0f, -1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
+        { { 1.0f, -1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+        { { 1.0f,  1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+        { {-1.0f,  1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
     };
 
     _indices = { 0, 1, 2, 2, 3, 0 };
@@ -1218,7 +1222,7 @@ VkPresentModeKHR Vulkan::chooseSwapPresentMode(const std::vector<VkPresentModeKH
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow *window) 
+VkExtent2D Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) 
 {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
     {
@@ -1228,7 +1232,7 @@ VkExtent2D Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities
     int width = 0;
     int height = 0;
 
-    glfwGetFramebufferSize(window, &width, &height);
+    glfwGetFramebufferSize(Global::getInstance().getWindow(), &width, &height);
 
     VkExtent2D actualExtent =
     {
@@ -1546,34 +1550,24 @@ void Vulkan::copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize
     vkCmdCopyBuffer(commandBuffer, sourceBuffer, destBuffer, 1, &copyRegion);
 
     endSingleTimeCommand(commandBuffer);
-
 }
 
 void Vulkan::updateUniformBuffers(uint32_t currentImage, TimeStep timestep)
 {
     _time += timestep;
+    float aspect = 1280.f / 720.f;
 
     //TODO: Move the camera calculations out of here and into a camera class.
     UniformBufferObject uniformBufferObj;
-    uniformBufferObj.model = glm::rotate(glm::mat4(1.0f), _time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));//glm::rotate(glm::mat4(1.f), timestep * glm::radians(90.f), glm::vec3(1.f, 1.f, 1.f));
-    uniformBufferObj.view = glm::mat4(1.f);//glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                        /*glm::inverse(glm::translate(glm::mat4x4(1.f), {0.f, 0.f, 0.f}) *
-                                         glm::rotate(glm::mat4x4(1.f), glm::radians(0.f), 
-                                         glm::vec3(0, 0, 1)));*/
-    uniformBufferObj.projection = glm::ortho(static_cast<float>(-(1280 / 720)), static_cast<float>((1280 / 720)), -1.f, 1.f); //glm::perspective(glm::radians(45.0f), _swapChainExtent.width / (float)_swapChainExtent.height, 0.1f, 10.0f);
-                //glm::ortho(static_cast<float>(-(1280 / 720)), static_cast<float>((1280 / 720)), -1.f, 1.f);
-    //uniformBufferObj.projection[1][1] *= -1;
+    uniformBufferObj.model = glm::translate(glm::mat4x4(1.f), { 0.f, 2.5f, 0.f }) *
+                                            glm::rotate(glm::mat4x4(1.f), _time * glm::radians(90.f),
+                                            glm::vec3(0, 0, 1));
+    uniformBufferObj.view = glm::inverse(glm::translate(glm::mat4x4(1.f), { 0.f, 0.0f, 0.f }) *
+                                         glm::rotate(glm::mat4x4(1.f), _time * glm::radians(-90.f),
+                                         glm::vec3(0, 0, 1)));
+    uniformBufferObj.projection = glm::ortho(-aspect * 4.5f, aspect * 4.5f, -4.5f, 4.5f);
 
     memcpy(_uniformBufferMapped[currentImage], &uniformBufferObj, sizeof(uniformBufferObj));
-    //int width = 1280, int height = 720
-    //glm::ortho(left, right, top, bottom, 1.f, -1.f);
-    //glm::mat4x4 transform = glm::translate(glm::mat4x4(1.f), _position) *
-    //    glm::rotate(glm::mat4x4(1.f), glm::radians(_rotation), glm::vec3(0, 0, 1));
-
-    //_viewMatrix = glm::inverse(transform);
-
-    //_aspectRatio = width / height;
-    //-_aspectRatio * _zoomLevel, _aspectRatio* _zoomLevel, -_zoomLevel, _zoomLevel
 }
 
 void Vulkan::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -1592,7 +1586,7 @@ void Vulkan::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIn
     renderPassInfo.renderArea.extent = _swapChainExtent;
 
     std::array<VkClearValue, 2> clearValues = {};
-    clearValues[0].color = { { 0.f, 0.f, 0.f, 1.f } };
+    clearValues[0].color = { { 0.2f, 0.2f, 0.2f, 0.2f } };
     clearValues[1].depthStencil = { 1.f, 0 };
 
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
