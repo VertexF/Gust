@@ -17,6 +17,7 @@
 #include "Core/Global.h"
 
 #include "Core/TimeStep.h"
+#include "VkInit.h"
 
 namespace
 {
@@ -58,17 +59,18 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 struct UniformBufferObject 
 {
-    alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 projection;
 };
+
+glm::mat4 model;
 
 } //TED
 
 namespace Gust
 {
 
-Vulkan::Vulkan(const char* title) : _mipLevels(0), _currentFrame(0), _time(0.f)
+Vulkan::Vulkan(const char* title) : _mipLevels(0), _currentFrame(0), _time(0.f), _flashTime(0.f)
 {
     initVulkan(title);
 }
@@ -102,6 +104,108 @@ void Vulkan::recreateSwapChain()
     createColourResources();
     createDepthResources();
     createFramebuffer();
+}
+
+void Vulkan::otherDrawFrame(TimeStep timestep)
+{
+    _flashTime += timestep;
+
+    vkWaitForFences(_logicalDevice, 1, &_inFlightFence[_currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(_logicalDevice, 1, &_inFlightFence[_currentFrame]);
+
+    vkResetCommandBuffer(_commandBuffers[_currentFrame], 0);
+
+    uint32_t imageIndex = -1;
+    VkResult result = vkAcquireNextImageKHR(_logicalDevice, _swapChain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame],
+                                            VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreateSwapChain();
+        return;
+    }
+    GUST_CORE_ASSERT(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image.");
+
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    result = vkBeginCommandBuffer(_commandBuffers[_currentFrame], &beginInfo);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to begin recording command buffer.");
+
+    //VkRenderPassBeginInfo renderPassInfo = renderpassBeginInfo(_renderPass, _swapChainExtent, _swapChainFramebuffers[imageIndex]);
+
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = _renderPass;
+    renderPassInfo.framebuffer = _swapChainFramebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = _swapChainExtent;
+
+    std::array<VkClearValue, 2> clearValues = {};
+    float flash = std::abs(std::sin(_flashTime));
+    clearValues[0].color = { { 0.f, 0.f, flash, 0.f } };
+    clearValues[1].depthStencil = { 1.f, 0 };
+
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(_commandBuffers[_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+
+    VkViewport viewport = {};
+    viewport.x = 0.f;
+    viewport.y = 0.f;
+    viewport.width = static_cast<float>(_swapChainExtent.width);
+    viewport.height = static_cast<float>(_swapChainExtent.height);
+    viewport.minDepth = 0.f;
+    viewport.maxDepth = 1.f;
+
+    vkCmdSetViewport(_commandBuffers[_currentFrame], 0, 1, &viewport);
+
+    VkRect2D scissor = {};
+    scissor.offset = { 0, 0 };
+    scissor.extent = _swapChainExtent;
+    vkCmdSetScissor(_commandBuffers[_currentFrame], 0, 1, &scissor);
+
+    vkCmdEndRenderPass(_commandBuffers[_currentFrame]);
+    vkEndCommandBuffer(_commandBuffers[_currentFrame]);
+    
+    VkSubmitInfo submit = submitInfo(&_commandBuffers[_currentFrame]);
+
+    VkSemaphore waitSemaphores[] = { _imageAvailableSemaphores[_currentFrame] };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+    submit.waitSemaphoreCount = 1;
+    submit.pWaitSemaphores = waitSemaphores;
+    submit.pWaitDstStageMask = waitStages;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &_commandBuffers[_currentFrame];
+
+    submit.signalSemaphoreCount = 1;
+    submit.pSignalSemaphores = &_renderFinishedSemaphores[_currentFrame];
+
+    result = vkQueueSubmit(_graphicsQueue, 1, &submit, _inFlightFence[_currentFrame]);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to submit command buffer.");
+
+    VkPresentInfoKHR present = presentInfo();
+    present.pSwapchains = &_swapChain;
+    present.swapchainCount = 1;
+    present.pWaitSemaphores = &_renderFinishedSemaphores[_currentFrame];
+    present.waitSemaphoreCount = 1;
+    present.pImageIndices = &imageIndex;
+
+    result = vkQueuePresentKHR(_presentQueue, &present);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+    {
+        recreateSwapChain();
+        return;
+    }
+
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to present swap chain image.");
+
+    _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void Vulkan::drawFrame(TimeStep timestep)
@@ -561,8 +665,8 @@ void Vulkan::createDescriptionSetLayout()
 
 void Vulkan::createGraphicsPipeline()
 {
-    auto vertexShaderCode = readFile("Assets/Shaders/simple_shader.vert.spv");
-    auto fragShaderCode = readFile("Assets/Shaders/simple_shader.frag.spv");
+    auto vertexShaderCode = readFile("Assets/Shaders/triangle.vert.spv");
+    auto fragShaderCode = readFile("Assets/Shaders/triangle.frag.spv");
 
     VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -706,7 +810,7 @@ void Vulkan::createTextureImage()
     int texWidth = -1;
     int texHeight = -1;
     int texChannel = -1;
-    stbi_uc* pixels = stbi_load("Assets/Textures/3.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("Assets/Textures/test.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     _mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     GUST_CORE_ASSERT(pixels == nullptr, "Failed to load texture image.");
@@ -773,10 +877,10 @@ void Vulkan::createGeometry()
 {
     _vertices = 
     {
-        { {-1.0f, -1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
-        { { 1.0f, -1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
-        { { 1.0f,  1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
-        { {-1.0f,  1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
+        { {-1.0f, -1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
+        { { 1.0f, -1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+        { { 1.0f,  1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+        { {-1.0f,  1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
     };
 
     _indices = { 0, 1, 2, 2, 3, 0 };
@@ -1557,15 +1661,22 @@ void Vulkan::updateUniformBuffers(uint32_t currentImage, TimeStep timestep)
     _time += timestep;
     float aspect = 1280.f / 720.f;
 
+    model = glm::translate(glm::mat4x4(1.f), { 0.f, -2.5f, 0.f }) *
+                           glm::rotate(glm::mat4x4(1.f), _time * glm::radians(90.f),
+                           glm::vec3(0, 0, 1));
+
+
     //TODO: Move the camera calculations out of here and into a camera class.
     UniformBufferObject uniformBufferObj;
-    uniformBufferObj.model = glm::translate(glm::mat4x4(1.f), { 0.f, 2.5f, 0.f }) *
-                                            glm::rotate(glm::mat4x4(1.f), _time * glm::radians(90.f),
-                                            glm::vec3(0, 0, 1));
     uniformBufferObj.view = glm::inverse(glm::translate(glm::mat4x4(1.f), { 0.f, 0.0f, 0.f }) *
-                                         glm::rotate(glm::mat4x4(1.f), _time * glm::radians(-90.f),
+                                         glm::rotate(glm::mat4x4(1.f), glm::radians(0.f),
                                          glm::vec3(0, 0, 1)));
     uniformBufferObj.projection = glm::ortho(-aspect * 4.5f, aspect * 4.5f, -4.5f, 4.5f);
+
+    for (int i = 0; i < _vertices.size(); i++) 
+    {
+        _vertices[i].pos = _vertices[i].pos * model;
+    }
 
     memcpy(_uniformBufferMapped[currentImage], &uniformBufferObj, sizeof(uniformBufferObj));
 }

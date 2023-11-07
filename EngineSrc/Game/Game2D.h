@@ -7,6 +7,7 @@
 #include "Core/TimeStep.h"
 #include "Core/Layer.h"
 #include "Renderer/Vulkan.h"
+#include "Renderer/RenderingEngine.h"
 
 namespace game 
 {
@@ -27,6 +28,9 @@ public:
     bool mouseReleased(Gust::MouseButtonReleasedEvent& ent);
 private:
     Gust::Vulkan* _vulkan;
+    Gust::Renderer* _renderingEngine;
+
+    int _mouseButton = 0;
 };
 
 }

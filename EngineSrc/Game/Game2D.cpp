@@ -8,7 +8,10 @@ namespace game
 {
 Game2D::Game2D() : Gust::Layer("Game World")
 {
-    _vulkan = new Gust::Vulkan("Gust Engine");
+    _vulkan = nullptr;
+    //_vulkan = new Gust::Vulkan("Gust Engine");
+    _renderingEngine = new Gust::Renderer;
+    _renderingEngine->initVulkan("Wow");
 }
 
 void Game2D::attach() 
@@ -22,7 +25,7 @@ void Game2D::detach()
 
 void Game2D::update(Gust::TimeStep timeStep) 
 {
-    _vulkan->drawFrame(timeStep);
+    _renderingEngine->drawFrame(timeStep, _mouseButton);
 }
 
 void Game2D::handleEvent(Gust::Event& ent) 
@@ -53,6 +56,8 @@ bool Game2D::mouseReleased(Gust::MouseButtonReleasedEvent& ent)
 {
     GUST_INFO("Mouse button is: {0}", ent.getMouseButton());
     //One this event get mouse position.
+
+    _mouseButton = ent.getMouseButton();
     return false;
 }
 

@@ -21,7 +21,7 @@ std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescription
     std::array<VkVertexInputAttributeDescription, 3> attributeDescription = {};
     attributeDescription[0].binding = 0;
     attributeDescription[0].location = 0;
-    attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescription[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
     attributeDescription[0].offset = offsetof(Vertex, pos);
 
     attributeDescription[1].binding = 0;
@@ -39,7 +39,7 @@ std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescription
 
 bool Vertex::operator==(const Vertex& rhs) 
 {
-    return pos == rhs.pos && colour == rhs.colour && texCoord == rhs.texCoord;
+    return pos == rhs.pos && colour == rhs.colour && texCoord == rhs.texCoord && model == rhs.model;
 }
 
 } //GUST
@@ -56,8 +56,9 @@ struct std::hash<Gust::Vertex>
         auto hash1 = std::hash<glm::vec3>()(vertex.pos);
         auto hash2 = std::hash<glm::vec3>()(vertex.colour);
         auto hash3 = std::hash<glm::vec2>()(vertex.texCoord);
+        auto hash4 = std::hash<glm::mat4>()(vertex.model);
 
-        return ((hash1 ^ (hash2 << 1)) >> 1) ^ (hash3 << 1);
+        return ((hash1 ^ (hash2 << 1)) >> 1) ^ (hash3 << 1) ^ (hash4);
     }
 };
 

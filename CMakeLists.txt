@@ -21,6 +21,7 @@ if(MSVC)
     set(SPDLOG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/spdlog/include")
     set(GML_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/glm")
     set(STB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/stb")
+	set(VULKAN_ALLOCATE_MEMORY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/vma")
     #I need to uses a config file that is generated here. So it's not a 
     #mistake it's a binrary directory.
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${GUST_SOURCE})
@@ -44,9 +45,10 @@ target_include_directories(Gust PUBLIC ${SPDLOG_INCLUDE_DIR}
                                        ${GLFW_INCLUDE_DIR} 
                                        ${STB_INCLUDE_DIR} 
                                        ${VULKAN_INCLUDE_DIR} 
+									   ${VULKAN_ALLOCATE_MEMORY_DIR}
                                        ${ENGINE_INCLUDE})
 
-target_link_libraries(Gust PRIVATE spdlog STB GLFW ${VULKAN_LIB})
+target_link_libraries(Gust PRIVATE spdlog STB GLFW TINY_OBJ ${VULKAN_LIB})
 
 target_compile_options(Gust PRIVATE
 					   $<$<CXX_COMPILER_ID:MSVC>:/W4>

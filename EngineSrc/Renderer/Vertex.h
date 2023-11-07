@@ -13,9 +13,10 @@ namespace Gust
 struct Vertex
 {
 
-glm::vec3 pos;
+glm::vec4 pos;
 glm::vec3 colour;
 glm::vec2 texCoord;
+glm::mat4 model;
 
 static VkVertexInputBindingDescription getBindingDescription();
 static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescription();

@@ -1,9 +1,8 @@
-#ifndef VULKAN_HDR
-#define VULAKN_HDR
+#ifndef RENDERING_ENGINE_HDR
+#define RENDERING_ENGINE_HDR
 
-#include <optional>
 #include <vector>
-#include <string>
+#include <optional>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -11,76 +10,69 @@
 #include "Vertex.h"
 #include "Core/TimeStep.h"
 
-namespace 
+namespace
 {
 
-struct QueueFamilyIndices 
-{
-
-std::optional<uint32_t> graphicsFamily;
-std::optional<uint32_t> presentFamily;
-
-
-bool isComplete() 
-{
-    return graphicsFamily.has_value() && presentFamily.has_value();
-}
-
-};
-
-struct SwapChainSupportDetails 
-{
-    VkSurfaceCapabilitiesKHR capabilities = {};
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
 
 } //TED
+
 
 namespace Gust 
 {
 
-//The plan is with this class is have everything in it to render a square, then refactor everything afterwards.
-// All to make sure I'm not breaking things after things are moved.
-//TODO: Refactor class.
-class Vulkan 
+    struct QueueFamilyIndices
+    {
+
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+
+        bool isComplete()
+        {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+
+    };
+
+    struct SwapChainSupportDetails
+    {
+        VkSurfaceCapabilitiesKHR capabilities = {};
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
+//This idea of this class is to start abstracting away some of the code.
+//I'm not 100% sure this is what I even what I want to do but have 2 vulkan renders is just going to make a mess.
+class Renderer 
 {
 public:
-    Vulkan(const char* title);
+    Renderer();
 
-    void waitDevice();
-    void recreateSwapChain();
-    void otherDrawFrame(TimeStep timestep);
-    void drawFrame(TimeStep timestep);
-
-private:
     void initVulkan(const char* title);
+    void drawFrame(TimeStep timestep, int shaderSwitch = 0);
+private:
 
     void createInstance(const char* title);
     void setupDebugMessenger();
+
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+
     void createSwapChain();
     void createImageView();
     void createRenderPass();
+
     void createColourResources();
     void createDepthResources();
     void createFramebuffer();
-    void createDescriptionSetLayout();
-    void createGraphicsPipeline();
-    void createCommandPool();
-    void createTextureImage();
-    void createTextureImageView();
-    void createTextureSampler();
-    void createGeometry();
-    void createVertexBuffer();
-    void createIndexBuffer();
-    void createUniformBuffers();
-    void createDescriptorPool();
-    void createDescriptorSets();
-    void createCommandBuffer();
-    void createSyncObjects();
+
+    void createCommands();
+    bool loadShaderModule(const char *path, VkShaderModule *outShaderModule);
+    void createPipeline();
+    void createSyncStructures();
+
+    void recreateSwapChain();
 
     void swapChainCleanUp();
 
@@ -102,37 +94,21 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avaiablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, 
-                      VkDeviceMemory &bufferMemory);
-
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, uint32_t mipLevels);
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, 
-                     VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, 
-                     VkImage &image, VkDeviceMemory &imageMemory);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevel);
+    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
+                    VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+                    VkImage& image, VkDeviceMemory& imageMemory);
 
-    VkShaderModule createShaderModule(const std::vector<char> &code);
-
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommand(VkCommandBuffer commandBuffer);
-    void copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize size);
-
-    void updateUniformBuffers(uint32_t currentImage, TimeStep timestep);
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-    static std::vector<char> readFile(const std::string &filename);
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT* callbackData, 
-                                                        void* userData);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+        void* userData);
 
     //VulkanData
     VkInstance _instance;
     VkDebugUtilsMessengerEXT _debugMessenger;
     VkSurfaceKHR _surface;
-    
+
     VkPhysicalDevice _physicalDevice;
     VkDevice _logicalDevice;
 
@@ -159,7 +135,8 @@ private:
     VkDescriptorSetLayout _descriptorSetLayout;
 
     VkPipelineLayout _pipelineLayout;
-    VkPipeline _graphicsPipeline;
+    VkPipeline _redPipeline;
+    VkPipeline _colourPipeline;
 
     VkCommandPool _commandPool;
 
@@ -196,7 +173,6 @@ private:
     float _time;
     float _flashTime;
 };
+}
 
-} //GUST
-
-#endif // !VULKAN_HDR
+#endif //RENDERING_ENGINE_HDR
