@@ -3,12 +3,17 @@
 
 #include <vector>
 #include <optional>
+#include <unordered_map>
+#include <string>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include "Vertex.h"
 #include "Core/TimeStep.h"
+#include "Mesh.h"
+#include "Entity/StaticEntity.h"
+#include "Material.h"
 
 namespace
 {
@@ -20,26 +25,26 @@ namespace
 namespace Gust 
 {
 
-    struct QueueFamilyIndices
+struct QueueFamilyIndices
+{
+
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+
+
+    bool isComplete()
     {
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
 
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
+};
 
-
-        bool isComplete()
-        {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
-
-    };
-
-    struct SwapChainSupportDetails
-    {
-        VkSurfaceCapabilitiesKHR capabilities = {};
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
+struct SwapChainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR capabilities = {};
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
 
 //This idea of this class is to start abstracting away some of the code.
 //I'm not 100% sure this is what I even what I want to do but have 2 vulkan renders is just going to make a mess.
@@ -51,7 +56,6 @@ public:
     void initVulkan(const char* title);
     void drawFrame(TimeStep timestep, int shaderSwitch = 0);
 private:
-
     void createInstance(const char* title);
     void setupDebugMessenger();
 
@@ -71,6 +75,11 @@ private:
     bool loadShaderModule(const char *path, VkShaderModule *outShaderModule);
     void createPipeline();
     void createSyncStructures();
+
+    void loadMeshes();
+    void createScene();
+    void uploadMesh(Mesh &mesh);
+    void drawWorld(VkCommandBuffer command, Entity *first, int count);
 
     void recreateSwapChain();
 
@@ -94,10 +103,21 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avaiablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                      VkDeviceMemory& bufferMemory);
+    void copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize size);
+
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, uint32_t mipLevels);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
                     VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
                     VkImage& image, VkDeviceMemory& imageMemory);
+
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommand(VkCommandBuffer commandBuffer);
+
+    Material* createMaterial(VkPipeline pipeline, VkPipelineLayout layout, const std::string& name);
+    Material* getMaterial(const std::string& name);
+    Mesh* getMesh(const std::string& name);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -162,6 +182,8 @@ private:
     std::vector<VkSemaphore> _renderFinishedSemaphores;
     std::vector<VkFence> _inFlightFence;
 
+    VmaAllocator _allocator;
+
     //Vulkan setting data
     VkSampleCountFlagBits _msaaSamples;
     uint32_t _mipLevels;
@@ -172,6 +194,12 @@ private:
     std::vector<uint32_t> _indices;
     float _time;
     float _flashTime;
+
+    //EntityData
+    std::vector<Entity> _renderables;
+
+    std::unordered_map<std::string, Material> _materials;
+    std::unordered_map<std::string, Mesh> _meshes;
 };
 }
 

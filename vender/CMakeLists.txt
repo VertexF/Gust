@@ -76,6 +76,6 @@ add_library(STB STATIC stb/stb_image.h
                        stb/stb_truetype.cpp 
                        stb/stb_rect_pack.h 
                        stb/stb_rect_pack.cpp)
-					   
-add_library(TINY_OBJ STATIC tiny_obj_loader/tiny_obj_loader.h 
-							tiny_obj_loader/tiny_obj_loader.cpp)
+                       
+add_library(TINY_OBJ STATIC tinyobj/tiny_obj_loader.h 
+                            tinyobj/tiny_obj_loader.cpp)

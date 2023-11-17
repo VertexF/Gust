@@ -4,9 +4,14 @@
 #include <algorithm>
 #include <fstream>
 
+#include "glm/gtx/transform.hpp"
+#define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.h"
+
 #include "Core/Global.h"
 #include "VkInit.h"
 #include "PipelineBuilder.h"
+#include "Entity/StaticEntity.h"
 
 namespace
 {
@@ -45,13 +50,11 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-struct UniformBufferObject
+struct MeshPushConstants 
 {
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 projection;
+    glm::vec4 data;
+    glm::mat4 modelViewProjection;
 };
-
-glm::mat4 model;
 
 } //TED
 
@@ -60,7 +63,6 @@ namespace Gust
 
 Renderer::Renderer() : _currentFrame(0), _flashTime(0.f)
 {
-    
 }
 
 void Renderer::drawFrame(TimeStep timestep, int shaderSwitch /*= 0*/)
@@ -101,14 +103,16 @@ void Renderer::drawFrame(TimeStep timestep, int shaderSwitch /*= 0*/)
     renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(_commandBuffers[_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    if (shaderSwitch == 0)
-    {
-        vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _colourPipeline);
-    }
-    else 
-    {
-        vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _redPipeline);
-    }
+    //if (shaderSwitch == 0)
+    //{
+    //    vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _colourPipeline);
+    //}
+    //else 
+    //{
+    //    vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _redPipeline);
+    //}
+
+    vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _colourPipeline);
 
     VkViewport viewport = {};
     viewport.x = 0.f;
@@ -125,7 +129,8 @@ void Renderer::drawFrame(TimeStep timestep, int shaderSwitch /*= 0*/)
     scissor.extent = _swapChainExtent;
     vkCmdSetScissor(_commandBuffers[_currentFrame], 0, 1, &scissor);
 
-    vkCmdDraw(_commandBuffers[_currentFrame], 3, 1, 0, 0);
+    //vkCmdDraw(_commandBuffers[_currentFrame], 3, 1, 0, 0);
+    drawWorld(_commandBuffers[_currentFrame], _renderables.data(), _renderables.size());
 
     vkCmdEndRenderPass(_commandBuffers[_currentFrame]);
     vkEndCommandBuffer(_commandBuffers[_currentFrame]);
@@ -145,7 +150,7 @@ void Renderer::drawFrame(TimeStep timestep, int shaderSwitch /*= 0*/)
     submit.pSignalSemaphores = &_renderFinishedSemaphores[_currentFrame];
 
     result = vkQueueSubmit(_graphicsQueue, 1, &submit, _inFlightFence[_currentFrame]);
-    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to submit command buffer.");
+    //GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to submit command buffer.");
 
     VkPresentInfoKHR present = presentInfo();
     present.pSwapchains = &_swapChain;
@@ -186,6 +191,8 @@ void Renderer::initVulkan(const char* title)
 
     createCommands();
     createPipeline();
+    loadMeshes();
+    createScene();
     createSyncStructures();
 }
 
@@ -578,14 +585,6 @@ void Renderer::createCommands()
 void Renderer::createPipeline() 
 {
     bool success = false;
-    VkShaderModule redTriangleVertexShader;
-    success = loadShaderModule("Assets/Shaders/redTriangle.vert.spv", &redTriangleVertexShader);
-    GUST_CORE_ASSERT(success != true, "Failed to load the red vertex triangle shader");
-
-    VkShaderModule redTriangleFragShader;
-    success = loadShaderModule("Assets/Shaders/redTriangle.frag.spv", &redTriangleFragShader);
-    GUST_CORE_ASSERT(success != true, "Failed to load the red fragment triangle shader");
-
     VkShaderModule colouredTriangleVertexShader;
     success = loadShaderModule("Assets/Shaders/triangle.vert.spv", &colouredTriangleVertexShader);
     GUST_CORE_ASSERT(success != true, "Failed to load the coloured vertex triangle shader");
@@ -595,12 +594,21 @@ void Renderer::createPipeline()
     GUST_CORE_ASSERT(success != true, "Failed to load the coloured fragment triangle shader");
 
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = pipelineLayoutInfo();
+
+    VkPushConstantRange pushContant = {};
+    pushContant.offset = 0;
+    pushContant.size = sizeof(MeshPushConstants);
+    pushContant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushContant;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+
     VkResult result = vkCreatePipelineLayout(_logicalDevice, &pipelineLayoutCreateInfo, nullptr, &_pipelineLayout);
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Could not create the pipeline layout.");
 
     PipelineBuilder pipelineBuilder;
-    pipelineBuilder.shaderStages.push_back(pipelineShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, redTriangleVertexShader));
-    pipelineBuilder.shaderStages.push_back(pipelineShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, redTriangleFragShader));
+    pipelineBuilder.shaderStages.push_back(pipelineShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, colouredTriangleVertexShader));
+    pipelineBuilder.shaderStages.push_back(pipelineShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, colouredTriangleFragShader));
 
     pipelineBuilder.vertexInputInfo = vertexInputStateInfo();
     pipelineBuilder.inputAssembly = inputAssemblyInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -615,19 +623,27 @@ void Renderer::createPipeline()
     pipelineBuilder.scissor.extent = _swapChainExtent;
 
     pipelineBuilder.rasteriser = rasterisationStateInfo(VK_POLYGON_MODE_FILL);
-    pipelineBuilder.depthStencil = depthStencilStateInfo();
+    pipelineBuilder.depthStencil = depthStencilStateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
     pipelineBuilder.multisampling = multisamplingStateInfo(getMaxUsableSampleCount());
     pipelineBuilder.colourBlendAttachment = colourBlendAttachmentState();
     pipelineBuilder.dynamicState = dynamicStateInfo();
 
-    pipelineBuilder.pipelineLayout = _pipelineLayout;
-    _redPipeline = pipelineBuilder.buildPipeline(_logicalDevice, _renderPass);
-    pipelineBuilder.shaderStages.clear();
+    VertexInputDescription vertexDescription = ModelVertex::getVertexDescription();
 
-    pipelineBuilder.shaderStages.push_back(pipelineShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, colouredTriangleVertexShader));
-    pipelineBuilder.shaderStages.push_back(pipelineShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, colouredTriangleFragShader));
+    pipelineBuilder.vertexInputInfo.pVertexAttributeDescriptions = vertexDescription.attributes.data();
+    pipelineBuilder.vertexInputInfo.vertexAttributeDescriptionCount = vertexDescription.attributes.size();
+
+    pipelineBuilder.vertexInputInfo.pVertexBindingDescriptions = vertexDescription.bindings.data();
+    pipelineBuilder.vertexInputInfo.vertexBindingDescriptionCount = vertexDescription.bindings.size();
+
+    pipelineBuilder.pipelineLayout = _pipelineLayout;
     _colourPipeline = pipelineBuilder.buildPipeline(_logicalDevice, _renderPass);
 
+    createMaterial(_colourPipeline, _pipelineLayout, "DefaultMesh");
+    vkDestroyShaderModule(_logicalDevice, colouredTriangleVertexShader, nullptr);
+    vkDestroyShaderModule(_logicalDevice, colouredTriangleFragShader, nullptr);
+
+    pipelineBuilder.shaderStages.clear();
 }
 
 bool Renderer::loadShaderModule(const char* path, VkShaderModule* outShaderModule)
@@ -681,6 +697,124 @@ void Renderer::createSyncStructures()
 
         result = vkCreateFence(_logicalDevice, &fenceInfo, nullptr, &_inFlightFence[i]);
         GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create synchronisation objects for frames in flight.");
+    }
+}
+
+void Renderer::loadMeshes()
+{
+    Mesh triMesh = {};
+    triMesh.vertices.resize(3);
+
+    triMesh.vertices[0].position = {  1.f,  1.f, 0.f };
+    triMesh.vertices[1].position = { -1.f,  1.f, 0.f };
+    triMesh.vertices[2].position = {  0.f, -1.f, 0.f };
+
+    triMesh.vertices[0].colour = { 0.f, 1.f, 0.f };
+    triMesh.vertices[1].colour = { 0.f, 1.f, 0.f };
+    triMesh.vertices[2].colour = { 0.f, 1.f, 0.f };
+
+    Mesh monkeyMesh = {};
+    monkeyMesh.loadFromObj("C:/Users/Dan/Documents/Development/git/GameEngine/VS/Assets/Models/monkey_smooth.obj");
+
+    uploadMesh(triMesh);
+    uploadMesh(monkeyMesh);
+
+    _meshes["monkey"] = monkeyMesh;
+    _meshes["triangle"] = triMesh;
+}
+
+void Renderer::createScene()
+{
+    //TODO: This is a very primitive world creation and entity manager all rolled into one function.
+    //Move could out later to be more realitic.
+
+    Entity monkey;
+    monkey.setMesh(getMesh("monkey"));
+    monkey.setMaterial(getMaterial("DefaultMesh"));
+    monkey.setTransform(glm::mat4(1.f));
+
+    _renderables.push_back(monkey);
+
+    //for (int x = 20; x <= 20; x++) 
+    //{
+    //    for (int y = 20; y <= 20; y++) 
+    //    {
+            //Entity triangle;
+            //triangle.setMesh(getMesh("triangle"));
+            //triangle.setMaterial(getMaterial("DefaultMesh"));
+            //glm::mat4 translation = glm::translate(glm::mat4(1.f), glm::vec3(0, 0, 0));
+            //glm::mat4 scale = glm::scale(glm::mat4(1.f), glm::vec3(0.2f, 0.2f, 0.2f));
+
+            //triangle.setTransform(translation * scale);
+
+            //_renderables.push_back(triangle);
+    //    }
+    //}
+}
+
+void Renderer::uploadMesh(Mesh& mesh)
+{
+    VkDeviceSize bufferSize = sizeof(mesh.vertices[0]) * mesh.vertices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer, stagingBufferMemory);
+
+    void* data = nullptr;
+    vkMapMemory(_logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, mesh.vertices.data(), static_cast<size_t>(bufferSize));
+    vkUnmapMemory(_logicalDevice, stagingBufferMemory);
+
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mesh.vertexBuffer.buffer, mesh.vertexBuffer.bufferMemory);
+    copyBuffer(stagingBuffer, mesh.vertexBuffer.buffer, bufferSize);
+
+    vkDestroyBuffer(_logicalDevice, stagingBuffer, nullptr);
+    vkFreeMemory(_logicalDevice, stagingBufferMemory, nullptr);
+}
+
+void Renderer::drawWorld(VkCommandBuffer command, Entity* first, int count)
+{
+    //TODO: This is a static camera that can't be moved. Move this guy out and pass it in as an 
+    // arguement to apply the user to move the camera as they see fit.
+    glm::vec3 cameraPosition = { 0.f, -6.f, -10.f };
+
+    glm::mat4 view = glm::translate(glm::mat4(1.f), cameraPosition);
+    glm::mat4 projection = glm::perspective(glm::radians(70.f), 1280.f / 720.f, 0.1f, 200.f);
+    projection[1][1] *= -1;
+
+    Mesh* lastMesh = nullptr;
+    Material* lastMaterial = nullptr;
+    for (int i = 0; i < count; i++) 
+    {
+        Entity& object = first[i];
+
+        //To check if we need to bind a new pipeline line.
+        if (object.getMaterial() != lastMaterial) 
+        {
+            vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, object.getMaterial()->pipeline);
+            lastMaterial = object.getMaterial();
+        }
+
+        glm::mat4 model = object.getTransform();
+        glm::mat4 meshMatrix = projection * view * model;
+
+        MeshPushConstants contants;
+        contants.modelViewProjection = meshMatrix;
+
+        vkCmdPushConstants(command, object.getMaterial()->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &contants);
+
+        //To check if we are on a different mesh.
+        if (object.getMesh() != lastMesh) 
+        {
+            VkDeviceSize offset = 0;
+            vkCmdBindVertexBuffers(command, 0, 1, &object.getMesh()->vertexBuffer.buffer, &offset);
+            lastMesh = object.getMesh();
+        }
+
+        vkCmdDraw(command, object.getMesh()->vertices.size(), 1, 0, 0);
     }
 }
 
@@ -957,6 +1091,43 @@ VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabiliti
     return actualExtent;
 }
 
+void Renderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
+    VkDeviceMemory& bufferMemory)
+{
+    VkBufferCreateInfo bufferInfo = {};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VkResult result = vkCreateBuffer(_logicalDevice, &bufferInfo, nullptr, &buffer);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create buffer.");
+
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(_logicalDevice, buffer, &memoryRequirements);
+
+    VkMemoryAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocateInfo.allocationSize = memoryRequirements.size;
+    allocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
+
+    result = vkAllocateMemory(_logicalDevice, &allocateInfo, nullptr, &bufferMemory);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to allocate buffer memory.");
+
+    vkBindBufferMemory(_logicalDevice, buffer, bufferMemory, 0);
+}
+
+void Renderer::copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize size)
+{
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+    VkBufferCopy copyRegion = {};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, sourceBuffer, destBuffer, 1, &copyRegion);
+
+    endSingleTimeCommand(commandBuffer);
+}
+
 VkImageView Renderer::createImageView(VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, uint32_t mipLevels)
 {
     VkImageViewCreateInfo createInfo = {};
@@ -1011,6 +1182,75 @@ void Renderer::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, 
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create image memory.");
 
     vkBindImageMemory(_logicalDevice, image, imageMemory, 0);
+}
+
+VkCommandBuffer Renderer::beginSingleTimeCommands()
+{
+    VkCommandBufferAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandPool = _commandPool;
+    allocateInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(_logicalDevice, &allocateInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void Renderer::endSingleTimeCommand(VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(_graphicsQueue);
+
+    vkFreeCommandBuffers(_logicalDevice, _commandPool, 1, &commandBuffer);
+}
+
+Material* Renderer::createMaterial(VkPipeline pipeline, VkPipelineLayout layout, const std::string& name)
+{
+    Material material;
+    material.pipeline = pipeline;
+    material.pipelineLayout = layout;
+    _materials[name] = material;
+
+    return &_materials[name];
+}
+
+Material* Renderer::getMaterial(const std::string& name)
+{
+    auto it = _materials.find(name);
+    if (it == _materials.end())
+    {
+        GUST_CORE_ASSERT(true, "Was unable to find the material in the map.");
+        return nullptr;
+    }
+
+    return &it->second;
+}
+
+Mesh* Renderer::getMesh(const std::string& name)
+{
+    auto it = _meshes.find(name);
+    if (it == _meshes.end())
+    {
+        GUST_CORE_ASSERT(true, "Was unable to find the material in the map.");
+        return nullptr;
+    }
+
+    return &it->second;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

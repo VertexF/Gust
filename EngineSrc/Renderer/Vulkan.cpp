@@ -12,6 +12,7 @@
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <tiny_obj_loader.h>
 
 #include "Core/Logger.h"
 #include "Core/Global.h"
@@ -59,11 +60,10 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 struct UniformBufferObject 
 {
+    alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 projection;
 };
-
-glm::mat4 model;
 
 } //TED
 
@@ -72,6 +72,7 @@ namespace Gust
 
 Vulkan::Vulkan(const char* title) : _mipLevels(0), _currentFrame(0), _time(0.f), _flashTime(0.f)
 {
+    //RenderGlobals::getInstance();
     initVulkan(title);
 }
 
@@ -104,108 +105,6 @@ void Vulkan::recreateSwapChain()
     createColourResources();
     createDepthResources();
     createFramebuffer();
-}
-
-void Vulkan::otherDrawFrame(TimeStep timestep)
-{
-    _flashTime += timestep;
-
-    vkWaitForFences(_logicalDevice, 1, &_inFlightFence[_currentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(_logicalDevice, 1, &_inFlightFence[_currentFrame]);
-
-    vkResetCommandBuffer(_commandBuffers[_currentFrame], 0);
-
-    uint32_t imageIndex = -1;
-    VkResult result = vkAcquireNextImageKHR(_logicalDevice, _swapChain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame],
-                                            VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        recreateSwapChain();
-        return;
-    }
-    GUST_CORE_ASSERT(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image.");
-
-
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    result = vkBeginCommandBuffer(_commandBuffers[_currentFrame], &beginInfo);
-    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to begin recording command buffer.");
-
-    //VkRenderPassBeginInfo renderPassInfo = renderpassBeginInfo(_renderPass, _swapChainExtent, _swapChainFramebuffers[imageIndex]);
-
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = _renderPass;
-    renderPassInfo.framebuffer = _swapChainFramebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = _swapChainExtent;
-
-    std::array<VkClearValue, 2> clearValues = {};
-    float flash = std::abs(std::sin(_flashTime));
-    clearValues[0].color = { { 0.f, 0.f, flash, 0.f } };
-    clearValues[1].depthStencil = { 1.f, 0 };
-
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(_commandBuffers[_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-
-    VkViewport viewport = {};
-    viewport.x = 0.f;
-    viewport.y = 0.f;
-    viewport.width = static_cast<float>(_swapChainExtent.width);
-    viewport.height = static_cast<float>(_swapChainExtent.height);
-    viewport.minDepth = 0.f;
-    viewport.maxDepth = 1.f;
-
-    vkCmdSetViewport(_commandBuffers[_currentFrame], 0, 1, &viewport);
-
-    VkRect2D scissor = {};
-    scissor.offset = { 0, 0 };
-    scissor.extent = _swapChainExtent;
-    vkCmdSetScissor(_commandBuffers[_currentFrame], 0, 1, &scissor);
-
-    vkCmdEndRenderPass(_commandBuffers[_currentFrame]);
-    vkEndCommandBuffer(_commandBuffers[_currentFrame]);
-    
-    VkSubmitInfo submit = submitInfo(&_commandBuffers[_currentFrame]);
-
-    VkSemaphore waitSemaphores[] = { _imageAvailableSemaphores[_currentFrame] };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-    submit.waitSemaphoreCount = 1;
-    submit.pWaitSemaphores = waitSemaphores;
-    submit.pWaitDstStageMask = waitStages;
-    submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &_commandBuffers[_currentFrame];
-
-    submit.signalSemaphoreCount = 1;
-    submit.pSignalSemaphores = &_renderFinishedSemaphores[_currentFrame];
-
-    result = vkQueueSubmit(_graphicsQueue, 1, &submit, _inFlightFence[_currentFrame]);
-    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to submit command buffer.");
-
-    VkPresentInfoKHR present = presentInfo();
-    present.pSwapchains = &_swapChain;
-    present.swapchainCount = 1;
-    present.pWaitSemaphores = &_renderFinishedSemaphores[_currentFrame];
-    present.waitSemaphoreCount = 1;
-    present.pImageIndices = &imageIndex;
-
-    result = vkQueuePresentKHR(_presentQueue, &present);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-    {
-        recreateSwapChain();
-        return;
-    }
-
-    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to present swap chain image.");
-
-    _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void Vulkan::drawFrame(TimeStep timestep)
@@ -300,7 +199,8 @@ void Vulkan::initVulkan(const char* title)
     createTextureImageView();
     createTextureSampler();
 
-    createGeometry();
+    //createGeometry();
+    loadModel();
 
     createVertexBuffer();
     createIndexBuffer();
@@ -408,11 +308,11 @@ void Vulkan::pickPhysicalDevice()
 
 void Vulkan::createLogicalDevice()
 {
-    QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
+    //_queuefamilyIndices = findQueueFamilies(_physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     //TODO: Another set to try and get rid of.
-    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+    std::set<uint32_t> uniqueQueueFamilies = { _queuefamilyIndices.graphicsFamily.value(), _queuefamilyIndices.presentFamily.value() };
     float queuePriority = 1.f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
     {
@@ -446,10 +346,10 @@ void Vulkan::createLogicalDevice()
     }
 
     VkResult result = vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_logicalDevice);
-
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create logical device");
-    vkGetDeviceQueue(_logicalDevice, indices.graphicsFamily.value(), 0, &_graphicsQueue);
-    vkGetDeviceQueue(_logicalDevice, indices.presentFamily.value(), 0, &_presentQueue);
+
+    vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.graphicsFamily.value(), 0, &_graphicsQueue);
+    vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.presentFamily.value(), 0, &_presentQueue);
 }
 
 void Vulkan::createSwapChain()
@@ -476,10 +376,10 @@ void Vulkan::createSwapChain()
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
-    uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+    //QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
+    uint32_t queueFamilyIndices[] = { _queuefamilyIndices.graphicsFamily.value(), _queuefamilyIndices.presentFamily.value() };
 
-    if (indices.graphicsFamily != indices.presentFamily) 
+    if (_queuefamilyIndices.graphicsFamily != _queuefamilyIndices.presentFamily)
     {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
@@ -665,8 +565,8 @@ void Vulkan::createDescriptionSetLayout()
 
 void Vulkan::createGraphicsPipeline()
 {
-    auto vertexShaderCode = readFile("Assets/Shaders/triangle.vert.spv");
-    auto fragShaderCode = readFile("Assets/Shaders/triangle.frag.spv");
+    auto vertexShaderCode = readFile("Assets/Shaders/simple_shader.vert.spv");
+    auto fragShaderCode = readFile("Assets/Shaders/simple_shader.frag.spv");
 
     VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -794,12 +694,12 @@ void Vulkan::createGraphicsPipeline()
 
 void Vulkan::createCommandPool()
 {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
+    //QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = _queuefamilyIndices.graphicsFamily.value();
 
     VkResult result = vkCreateCommandPool(_logicalDevice, &poolInfo, nullptr, &_commandPool);
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create command pool.");
@@ -810,7 +710,7 @@ void Vulkan::createTextureImage()
     int texWidth = -1;
     int texHeight = -1;
     int texChannel = -1;
-    stbi_uc* pixels = stbi_load("Assets/Textures/test.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("Assets/Textures/room.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     _mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     GUST_CORE_ASSERT(pixels == nullptr, "Failed to load texture image.");
@@ -873,14 +773,60 @@ void Vulkan::createTextureSampler()
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create texture sampler.");
 }
 
+void Vulkan::loadModel() 
+{
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "Assets/Models/room.obj")) 
+    {
+        throw std::runtime_error(warn + err);
+    }
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+    for (const auto& shape : shapes) 
+    {
+        for (const auto& index : shape.mesh.indices) 
+        {
+            Vertex vertex = {};
+
+            vertex.pos = 
+            {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+
+            vertex.texCoord = 
+            {
+                attrib.texcoords[2 * index.texcoord_index + 0],
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+            };
+
+            vertex.colour = { 1.0f, 1.0f, 1.0f };
+
+            if (uniqueVertices.count(vertex) == 0) 
+            {
+                uniqueVertices[vertex] = static_cast<uint32_t>(_vertices.size());
+                _vertices.push_back(vertex);
+            }
+
+            _indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+}
+
 void Vulkan::createGeometry()
 {
     _vertices = 
     {
-        { {-1.0f, -1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
-        { { 1.0f, -1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
-        { { 1.0f,  1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
-        { {-1.0f,  1.0f, -0.5f, 1.f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
+        { {-1.0f, -1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f } },
+        { { 1.0f, -1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f } },
+        { { 1.0f,  1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+        { {-1.0f,  1.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
     };
 
     _indices = { 0, 1, 2, 2, 3, 0 };
@@ -1167,7 +1113,8 @@ SwapChainSupportDetails Vulkan::querySwapChainSupport(VkPhysicalDevice device)
 
 bool Vulkan::isDeviceSuitable(VkPhysicalDevice device) 
 {
-    QueueFamilyIndices indices = findQueueFamilies(device);
+    QueueFamily fam;
+    _queuefamilyIndices = fam.findQueueFamilies(device, _surface);
 
     bool extensionSupported = checkDeviceExtensionSupport(device);
 
@@ -1178,45 +1125,45 @@ bool Vulkan::isDeviceSuitable(VkPhysicalDevice device)
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    return indices.isComplete() && extensionSupported && swapChainAdequate;
+    return _queuefamilyIndices.isComplete() && extensionSupported && swapChainAdequate;
 }
 
-QueueFamilyIndices Vulkan::findQueueFamilies(VkPhysicalDevice device) 
-{
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for (const auto &queueFamilies : queueFamilies)
-    {
-        if (queueFamilies.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            indices.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _surface, &presentSupport);
-
-        if (presentSupport) 
-        {
-            indices.presentFamily = i;
-        }
-
-        if (indices.isComplete()) 
-        {
-            break;
-        }
-
-        i++;
-    }
-
-    return indices;
-}
+//QueueFamilyIndices Vulkan::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) 
+//{
+//    QueueFamilyIndices indices;
+//
+//    uint32_t queueFamilyCount = 0;
+//    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+//
+//    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+//    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+//
+//    int i = 0;
+//    for (const auto &queueFamilies : queueFamilies)
+//    {
+//        if (queueFamilies.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+//        {
+//            indices.graphicsFamily = i;
+//        }
+//
+//        VkBool32 presentSupport = false;
+//        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+//
+//        if (presentSupport) 
+//        {
+//            indices.presentFamily = i;
+//        }
+//
+//        if (indices.isComplete()) 
+//        {
+//            break;
+//        }
+//
+//        i++;
+//    }
+//
+//    return indices;
+//}
 
 bool Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device) 
 {
@@ -1661,22 +1608,28 @@ void Vulkan::updateUniformBuffers(uint32_t currentImage, TimeStep timestep)
     _time += timestep;
     float aspect = 1280.f / 720.f;
 
-    model = glm::translate(glm::mat4x4(1.f), { 0.f, -2.5f, 0.f }) *
-                           glm::rotate(glm::mat4x4(1.f), _time * glm::radians(90.f),
-                           glm::vec3(0, 0, 1));
+    //model = glm::translate(glm::mat4x4(1.f), { 0.f, -2.5f, 0.f }) *
+    //                       glm::rotate(glm::mat4x4(1.f), _time * glm::radians(90.f),
+    //                       glm::vec3(0, 0, 1));
 
 
     //TODO: Move the camera calculations out of here and into a camera class.
     UniformBufferObject uniformBufferObj;
-    uniformBufferObj.view = glm::inverse(glm::translate(glm::mat4x4(1.f), { 0.f, 0.0f, 0.f }) *
-                                         glm::rotate(glm::mat4x4(1.f), glm::radians(0.f),
-                                         glm::vec3(0, 0, 1)));
-    uniformBufferObj.projection = glm::ortho(-aspect * 4.5f, aspect * 4.5f, -4.5f, 4.5f);
+    //uniformBufferObj.view = glm::inverse(glm::translate(glm::mat4x4(1.f), { 0.f, 0.0f, 0.f }) *
+    //                                     glm::rotate(glm::mat4x4(1.f), glm::radians(0.f),
+    //                                     glm::vec3(0, 0, 1)));
+    //uniformBufferObj.projection = glm::ortho(-aspect * 4.5f, aspect * 4.5f, -4.5f, 4.5f);
 
-    for (int i = 0; i < _vertices.size(); i++) 
-    {
-        _vertices[i].pos = _vertices[i].pos * model;
-    }
+    //TODO: Design idea, do something like uniformBufferObj.model = Entity.getMeshTransform();
+    uniformBufferObj.model = glm::rotate(glm::mat4(1.0f), _time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    uniformBufferObj.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    uniformBufferObj.projection = glm::perspective(glm::radians(45.0f), _swapChainExtent.width / (float)_swapChainExtent.height, 0.1f, 10.0f);
+    uniformBufferObj.projection[1][1] *= -1;
+
+    //for (int i = 0; i < _vertices.size(); i++) 
+    //{
+    //    _vertices[i].pos = _vertices[i].pos * model;
+    //}
 
     memcpy(_uniformBufferMapped[currentImage], &uniformBufferObj, sizeof(uniformBufferObj));
 }

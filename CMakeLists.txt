@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 project(GustEngine
-		VERSION 0.0.0
-		LANGUAGES CXX C
-		DESCRIPTION "Vulkan Practice")
-		
+        VERSION 0.0.0
+        LANGUAGES CXX C
+        DESCRIPTION "Vulkan Practice")
+        
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE GUST_SOURCE
     "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.h"
-	"${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.vert"
     "${CMAKE_CURRENT_SOURCE_DIR}/EngineSrc/*.frag"
 )
 
@@ -21,7 +21,8 @@ if(MSVC)
     set(SPDLOG_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/spdlog/include")
     set(GML_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/glm")
     set(STB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/stb")
-	set(VULKAN_ALLOCATE_MEMORY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/vma")
+    set(VULKAN_ALLOCATE_MEMORY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/vma")
+    set(TINY_OBJ_LOADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vender/tinyobj")
     #I need to uses a config file that is generated here. So it's not a 
     #mistake it's a binrary directory.
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${GUST_SOURCE})
@@ -45,12 +46,13 @@ target_include_directories(Gust PUBLIC ${SPDLOG_INCLUDE_DIR}
                                        ${GLFW_INCLUDE_DIR} 
                                        ${STB_INCLUDE_DIR} 
                                        ${VULKAN_INCLUDE_DIR} 
-									   ${VULKAN_ALLOCATE_MEMORY_DIR}
+                                       ${VULKAN_ALLOCATE_MEMORY_DIR}
+                                       ${TINY_OBJ_LOADER_DIR}
                                        ${ENGINE_INCLUDE})
 
 target_link_libraries(Gust PRIVATE spdlog STB GLFW TINY_OBJ ${VULKAN_LIB})
 
 target_compile_options(Gust PRIVATE
-					   $<$<CXX_COMPILER_ID:MSVC>:/W4>
-					   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
+                       $<$<CXX_COMPILER_ID:MSVC>:/W4>
+                       $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
 )

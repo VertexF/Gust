@@ -1,7 +1,6 @@
 #include "Vertex.h"
 
 #include <functional>
-#include <glm/gtx/hash.hpp>
 
 namespace Gust
 {
@@ -21,7 +20,7 @@ std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescription
     std::array<VkVertexInputAttributeDescription, 3> attributeDescription = {};
     attributeDescription[0].binding = 0;
     attributeDescription[0].location = 0;
-    attributeDescription[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescription[0].offset = offsetof(Vertex, pos);
 
     attributeDescription[1].binding = 0;
@@ -37,29 +36,9 @@ std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescription
     return attributeDescription;
 }
 
-bool Vertex::operator==(const Vertex& rhs) 
+bool Vertex::operator==(const Vertex& rhs) const
 {
-    return pos == rhs.pos && colour == rhs.colour && texCoord == rhs.texCoord && model == rhs.model;
+    return pos == rhs.pos && colour == rhs.colour && texCoord == rhs.texCoord;
 }
 
 } //GUST
-
-//Look into your minecraft game when you try to move this.
-namespace std
-{
-
-template<>
-struct std::hash<Gust::Vertex>
-{
-    std::size_t operator()(Gust::Vertex const& vertex)
-    {
-        auto hash1 = std::hash<glm::vec3>()(vertex.pos);
-        auto hash2 = std::hash<glm::vec3>()(vertex.colour);
-        auto hash3 = std::hash<glm::vec2>()(vertex.texCoord);
-        auto hash4 = std::hash<glm::mat4>()(vertex.model);
-
-        return ((hash1 ^ (hash2 << 1)) >> 1) ^ (hash3 << 1) ^ (hash4);
-    }
-};
-
-} //STD

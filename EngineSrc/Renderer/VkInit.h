@@ -18,11 +18,14 @@ namespace Gust
     VkPipelineShaderStageCreateInfo pipelineShaderStageInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule);
     VkPipelineVertexInputStateCreateInfo vertexInputStateInfo();
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo(VkPrimitiveTopology topology);
-    VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo();
+    VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo(bool depthTest, bool depthWrite, VkCompareOp compareOp);
     VkPipelineRasterizationStateCreateInfo rasterisationStateInfo(VkPolygonMode polygonMode);
     VkPipelineMultisampleStateCreateInfo multisamplingStateInfo(VkSampleCountFlagBits sampleFlagBit);
     VkPipelineDynamicStateCreateInfo dynamicStateInfo();
     VkPipelineColorBlendAttachmentState colourBlendAttachmentState();
+
+    VkImageCreateInfo imageInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
+    VkImageViewCreateInfo imageviewInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo();
 }
