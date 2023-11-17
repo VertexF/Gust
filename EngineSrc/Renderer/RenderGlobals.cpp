@@ -1,5 +1,7 @@
 #include "RenderGlobals.h"
 
+#include <set>
+
 #include "Core/Global.h"
 #include "Core/Logger.h"
 
@@ -10,6 +12,11 @@ const static std::vector<const char*> validationLayers =
     "VK_LAYER_KHRONOS_validation"
 };
 
+static const std::vector<const char*> deviceExtensions =
+{
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 namespace Gust 
 {
 
@@ -17,6 +24,41 @@ RenderGlobals& RenderGlobals::getInstance()
 {
     static RenderGlobals instance;
     return instance;
+}
+
+VkSurfaceKHR RenderGlobals::getSurface() const
+{
+    return _surface;
+}
+
+VkPhysicalDevice RenderGlobals::getPhysicalDevice() const
+{
+    return _physicalDevice;
+}
+
+VkDevice RenderGlobals::getLogicalDevice() const 
+{
+    return _logicalDevice;
+}
+
+VkQueue RenderGlobals::getGraphicsQueue() const 
+{
+    return _graphicsQueue;
+}
+
+VkQueue RenderGlobals::getPresentQueue() const 
+{
+    return _presentQueue;
+}
+
+QueueFamilyIndices RenderGlobals::getFamilyIndices() const
+{
+    return _queuefamilyIndices;
+}
+
+VkSampleCountFlagBits RenderGlobals::getMSAASamples() const 
+{
+    return _msaaSamples;
 }
 
 RenderGlobals::RenderGlobals() 
@@ -100,71 +142,71 @@ void RenderGlobals::createSurface()
 
 void RenderGlobals::pickPhysicalDevice()
 {
-    //uint32_t deviceCount = 0;
-    //vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
 
-    //GUST_CORE_ASSERT(deviceCount == 0, "Failed to find a physical device that supports Vulkan.");
+    GUST_CORE_ASSERT(deviceCount == 0, "Failed to find a physical device that supports Vulkan.");
 
-    //std::vector<VkPhysicalDevice> devices(deviceCount);
-    //vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
 
-    //for (const auto& device : devices)
-    //{
-    //    if (isDeviceSuitable(device))
-    //    {
-    //        _physicalDevice = device;
-    //        _msaaSamples = getMaxUsableSampleCount();
-    //        break;
-    //    }
-    //}
+    for (const auto& device : devices)
+    {
+        if (isDeviceSuitable(device))
+        {
+            _physicalDevice = device;
+            _msaaSamples = getMaxUsableSampleCount();
+            break;
+        }
+    }
 
-    //GUST_CORE_ASSERT(_physicalDevice == VK_NULL_HANDLE, "Failed to find a suitable device.");
+    GUST_CORE_ASSERT(_physicalDevice == VK_NULL_HANDLE, "Failed to find a suitable device.");
 }
 
 void RenderGlobals::createLogicalDevice()
 {
-    ////_queuefamilyIndices = findQueueFamilies(_physicalDevice);
+    //_queuefamilyIndices = findQueueFamilies(_physicalDevice);
 
-    //std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    ////TODO: Another set to try and get rid of.
-    //std::set<uint32_t> uniqueQueueFamilies = { _queuefamilyIndices.graphicsFamily.value(), _queuefamilyIndices.presentFamily.value() };
-    //float queuePriority = 1.f;
-    //for (uint32_t queueFamily : uniqueQueueFamilies)
-    //{
-    //    VkDeviceQueueCreateInfo queueCreateInfo = {};
-    //    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    //    queueCreateInfo.queueFamilyIndex = queueFamily;
-    //    queueCreateInfo.queueCount = 1;
-    //    queueCreateInfo.pQueuePriorities = &queuePriority;
-    //    queueCreateInfos.push_back(queueCreateInfo);
-    //}
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    //TODO: Another set to try and get rid of.
+    std::set<uint32_t> uniqueQueueFamilies = { _queuefamilyIndices.graphicsFamily.value(), _queuefamilyIndices.presentFamily.value() };
+    float queuePriority = 1.f;
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
-    //VkPhysicalDeviceFeatures deviceFeatures = {};
-    //deviceFeatures.samplerAnisotropy = VK_TRUE;
+    VkPhysicalDeviceFeatures deviceFeatures = {};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
-    //VkDeviceCreateInfo createInfo = {};
-    //createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    //createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-    //createInfo.pQueueCreateInfos = queueCreateInfos.data();
-    //createInfo.pEnabledFeatures = &deviceFeatures;
-    //createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-    //createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    VkDeviceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    //if (ENABLE_VALIDATION_LAYER)
-    //{
-    //    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    //    createInfo.ppEnabledLayerNames = validationLayers.data();
-    //}
-    //else
-    //{
-    //    createInfo.enabledLayerCount = 0;
-    //}
+    if (ENABLE_VALIDATION_LAYER)
+    {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+    }
+    else
+    {
+        createInfo.enabledLayerCount = 0;
+    }
 
-    //VkResult result = vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_logicalDevice);
-    //GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create logical device");
+    VkResult result = vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_logicalDevice);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create logical device");
 
-    //vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.graphicsFamily.value(), 0, &_graphicsQueue);
-    //vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.presentFamily.value(), 0, &_presentQueue);
+    vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.graphicsFamily.value(), 0, &_graphicsQueue);
+    vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.presentFamily.value(), 0, &_presentQueue);
 }
 
 bool RenderGlobals::checkValidateLayerSupport()
@@ -226,6 +268,61 @@ void RenderGlobals::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreate
 
     createInfo.pfnUserCallback = debugCallback;
 }
+
+bool RenderGlobals::isDeviceSuitable(VkPhysicalDevice device)
+{
+    QueueFamily fam;
+    _queuefamilyIndices = fam.findQueueFamilies(device, _surface);
+
+    bool extensionSupported = checkDeviceExtensionSupport(device);
+
+    bool swapChainAdequate = false;
+    if (extensionSupported)
+    {
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+    }
+
+    return _queuefamilyIndices.isComplete() && extensionSupported && swapChainAdequate;
+}
+
+bool RenderGlobals::checkDeviceExtensionSupport(VkPhysicalDevice device)
+{
+    uint32_t extensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    //TODO: Check if you can get rid of set.
+    std::set<std::string> requiredExtension(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions)
+    {
+        requiredExtension.erase(extension.extensionName);
+    }
+
+    return requiredExtension.empty();
+}
+
+VkSampleCountFlagBits RenderGlobals::getMaxUsableSampleCount()
+{
+    VkPhysicalDeviceProperties physicalDeviceProperty;
+    vkGetPhysicalDeviceProperties(_physicalDevice, &physicalDeviceProperty);
+
+    VkSampleCountFlags count = physicalDeviceProperty.limits.framebufferColorSampleCounts &
+        physicalDeviceProperty.limits.framebufferDepthSampleCounts;
+
+    if (count & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+    if (count & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+    if (count & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+    if (count & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+    if (count & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+    if (count & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+    return VK_SAMPLE_COUNT_1_BIT;
+}
+
 
 VkResult RenderGlobals::createDebugUtilMessagerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* createInfo,
                                                    const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debugMessenger)
