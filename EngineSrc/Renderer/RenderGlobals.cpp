@@ -51,11 +51,6 @@ VkQueue RenderGlobals::getPresentQueue() const
     return _presentQueue;
 }
 
-QueueFamilyIndices RenderGlobals::getFamilyIndices() const
-{
-    return _queuefamilyIndices;
-}
-
 VkSampleCountFlagBits RenderGlobals::getMSAASamples() const 
 {
     return _msaaSamples;
@@ -271,15 +266,14 @@ void RenderGlobals::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreate
 
 bool RenderGlobals::isDeviceSuitable(VkPhysicalDevice device)
 {
-    QueueFamily fam;
-    _queuefamilyIndices = fam.findQueueFamilies(device, _surface);
+    _queuefamilyIndices = findQueueFamilies(device, _surface);
 
     bool extensionSupported = checkDeviceExtensionSupport(device);
 
     bool swapChainAdequate = false;
     if (extensionSupported)
     {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, _surface);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 

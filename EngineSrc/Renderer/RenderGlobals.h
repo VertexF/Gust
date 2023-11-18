@@ -3,17 +3,10 @@
 
 #include <vector>
 
-#include "VulkanQueueFamilies.h"
+#include "VulkanTypes.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-struct SwapChainSupportDetails
-{
-    VkSurfaceCapabilitiesKHR capabilities = {};
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
 
 namespace Gust
 {
@@ -27,7 +20,6 @@ public:
     VkDevice getLogicalDevice() const;
     VkQueue getGraphicsQueue() const;
     VkQueue getPresentQueue() const;
-    QueueFamilyIndices getFamilyIndices() const;
     VkSampleCountFlagBits getMSAASamples() const;
 
 private:
@@ -46,7 +38,6 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     VkSampleCountFlagBits getMaxUsableSampleCount();
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkResult createDebugUtilMessagerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* createInfo,
                                         const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debugMessenger);
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

@@ -10,20 +10,9 @@
 
 #include "Vertex.h"
 #include "RenderGlobals.h"
-#include "VulkanQueueFamilies.h"
+#include "VulkanTypes.h"
+
 #include "Core/TimeStep.h"
-
-namespace 
-{
-
-struct SwapChainSupportDetails 
-{
-    VkSurfaceCapabilitiesKHR capabilities = {};
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
-} //TED
 
 namespace Gust 
 {
@@ -43,11 +32,6 @@ public:
 private:
     void initVulkan(const char* title);
 
-    //void createInstance(const char* title);
-    //void setupDebugMessenger();
-    //void createSurface();
-    //void pickPhysicalDevice();
-    //void createLogicalDevice();
     void createSwapChain();
     void createImageView();
     void createRenderPass();
@@ -71,15 +55,6 @@ private:
     void createSyncObjects();
 
     void swapChainCleanUp();
-
-    bool checkValidateLayerSupport();
-    std::vector<const char*> getRequiredExtensions();
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    VkSampleCountFlagBits getMaxUsableSampleCount();
 
     VkFormat findDepthFormat();
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -110,21 +85,6 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     static std::vector<char> readFile(const std::string &filename);
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT* callbackData, 
-                                                        void* userData);
-
-    //VulkanData
-    //VkInstance _instance;
-    //VkDebugUtilsMessengerEXT _debugMessenger;
-    //VkSurfaceKHR _surface;
-    //
-    //VkPhysicalDevice _physicalDevice;
-    //VkDevice _logicalDevice;
-
-    //VkQueue _graphicsQueue;
-    //VkQueue _presentQueue;
 
     VkSwapchainKHR _swapChain;
     std::vector<VkImage> _swapChainImages;

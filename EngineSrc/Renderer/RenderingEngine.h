@@ -182,7 +182,7 @@ private:
     std::vector<VkSemaphore> _renderFinishedSemaphores;
     std::vector<VkFence> _inFlightFence;
 
-    VmaAllocator _allocator;
+    //VmaAllocator _allocator;
 
     //Vulkan setting data
     VkSampleCountFlagBits _msaaSamples;
