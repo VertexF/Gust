@@ -1,5 +1,7 @@
 #include "VkInit.h"
 
+#include "RenderGlobals.h"
+
 #include <array>
 
 namespace 
@@ -288,5 +290,41 @@ VkImageViewCreateInfo imageviewInfo(VkFormat format, VkImage image, VkImageAspec
 
     return info;
 }
+
+VkCommandBuffer beginSingleTimeCommands()
+{
+    VkCommandBufferAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandPool = RenderGlobals::getInstance().getCommandPool();
+    allocateInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(RenderGlobals::getInstance().getLogicalDevice(), &allocateInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void endSingleTimeCommand(VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(RenderGlobals::getInstance().getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(RenderGlobals::getInstance().getGraphicsQueue());
+
+    vkFreeCommandBuffers(RenderGlobals::getInstance().getLogicalDevice(), RenderGlobals::getInstance().getCommandPool(), 1, &commandBuffer);
+}
+
 
 } //GUST

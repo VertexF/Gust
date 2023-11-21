@@ -6,6 +6,7 @@
 #include "vulkan/vulkan.h"
 #include "glm/vec3.hpp"
 #include "VulkanTypes.h"
+#include "Vertex.h"
 
 namespace Gust 
 {
@@ -30,10 +31,15 @@ struct ModelVertex
 
 struct Mesh 
 {
+    //TODO: Remove these 2 after the refactoring is done.
     std::vector<ModelVertex> vertices;
     AllocatedBuffer vertexBuffer;
 
-    bool loadFromObj(const char *filename);
+    std::vector<Vertex> _vertices;
+    std::vector<uint32_t> _indices;
+
+    void loadModel(const char* filename);
+    void loadModelTexture(const char* filename);
 };
 
 }

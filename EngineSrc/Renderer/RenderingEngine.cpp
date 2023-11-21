@@ -714,7 +714,7 @@ void Renderer::loadMeshes()
     triMesh.vertices[2].colour = { 0.f, 1.f, 0.f };
 
     Mesh monkeyMesh = {};
-    monkeyMesh.loadFromObj("C:/Users/Dan/Documents/Development/git/GameEngine/VS/Assets/Models/monkey_smooth.obj");
+    monkeyMesh.loadModel("C:/Users/Dan/Documents/Development/git/GameEngine/VS/Assets/Models/monkey_smooth.obj");
 
     uploadMesh(triMesh);
     uploadMesh(monkeyMesh);

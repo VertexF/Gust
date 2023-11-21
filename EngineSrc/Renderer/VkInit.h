@@ -28,6 +28,10 @@ namespace Gust
     VkImageViewCreateInfo imageviewInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo();
+
+
+VkCommandBuffer beginSingleTimeCommands();
+void endSingleTimeCommand(VkCommandBuffer commandBuffer);
 }
 
 #endif // !VK_INIT_HDR

@@ -1,6 +1,8 @@
 #include "Mesh.h"
 
 #include "tiny_obj_loader.h"
+#include "stb_image.h"
+#include "RenderGlobals.h"
 #include "Core/Logger.h"
 
 namespace Gust
@@ -42,59 +44,63 @@ VertexInputDescription ModelVertex::getVertexDescription()
     return description;
 }
 
-bool Mesh::loadFromObj(const char* filename) 
+void Mesh::loadModel(const char* filename)
 {
-    tinyobj::attrib_t attributes;
-    //Shapes contains the info for each seperate object in the file.
+    tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
-    //Material infomation about each shape.
     std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
 
-    std::string warning;
-    std::string error;
-
-    tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, filename, nullptr);
-    GUST_WARN("The warnings from loading the obj file are: {0}", warning);
-    GUST_ERROR("The errors from loading the obj file are: {0}", error);
-
-    for (size_t i = 0; i < shapes.size(); i++)
+    if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename) == false)
     {
-        size_t indexOffset = 0;
-        for (size_t face = 0; face < shapes[i].mesh.num_face_vertices.size(); face++)
-        {
-            //NOTE: This is hardcoded to 3.
-            int faceVertices = 3;
-
-            for (size_t vertex = 0; vertex < faceVertices; vertex++)
-            {
-                tinyobj::index_t index = shapes[i].mesh.indices[indexOffset + vertex];
-                tinyobj::real_t vx = attributes.vertices[3 * index.vertex_index];
-                tinyobj::real_t vy = attributes.vertices[3 * index.vertex_index + 1];
-                tinyobj::real_t vz = attributes.vertices[3 * index.vertex_index + 2];
-
-                tinyobj::real_t nx = attributes.normals[3 * index.normal_index];
-                tinyobj::real_t ny = attributes.normals[3 * index.normal_index + 1];
-                tinyobj::real_t nz = attributes.normals[3 * index.normal_index + 2];
-
-                ModelVertex newVertex;
-                newVertex.position.x = vx;
-                newVertex.position.y = vy;
-                newVertex.position.z = vz;
-
-                newVertex.normal.x = nx;
-                newVertex.normal.y = ny;
-                newVertex.normal.z = nz;
-
-                //This is just for display purposes 
-                newVertex.colour = newVertex.normal;
-
-                vertices.push_back(newVertex);
-            }
-            indexOffset += faceVertices;
-        }
+        GUST_WARN("The warnings from loading the obj file are: {0}", warn);
+        GUST_ERROR("The errors from loading the obj file are: {0}", err);
     }
 
-    return true;
+    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+    for (const auto& shape : shapes)
+    {
+        for (const auto& index : shape.mesh.indices)
+        {
+            Vertex vertex = {};
+
+            vertex.pos =
+            {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+
+            vertex.texCoord =
+            {
+                attrib.texcoords[2 * index.texcoord_index + 0],
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+            };
+
+            vertex.colour = { 1.0f, 1.0f, 1.0f };
+
+            if (uniqueVertices.count(vertex) == 0)
+            {
+                uniqueVertices[vertex] = static_cast<uint32_t>(_vertices.size());
+                _vertices.push_back(vertex);
+            }
+
+            _indices.push_back(uniqueVertices[vertex]);
+        }
+    }
 }
-    
+
+
+void Mesh::loadModelTexture(const char* filename)
+{
+    //int texWidth = -1;
+    //int texHeight = -1;
+    //int texChannel = -1;
+    //stbi_uc* pixels = stbi_load("Assets/Textures/room.png", &texWidth, &texHeight, &texChannel, STBI_rgb_alpha);
+    //VkDeviceSize imageSize = texWidth * texHeight * 4;
+    //_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+    //GUST_CORE_ASSERT(pixels == nullptr, "Failed to load texture image.");
+}
+
 } //GUST

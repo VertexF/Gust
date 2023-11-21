@@ -21,6 +21,7 @@ public:
     VkQueue getGraphicsQueue() const;
     VkQueue getPresentQueue() const;
     VkSampleCountFlagBits getMSAASamples() const;
+    VkCommandPool getCommandPool() const;
 
 private:
     RenderGlobals();
@@ -31,6 +32,7 @@ private:
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createCommandPool();
 
     bool checkValidateLayerSupport();
     std::vector<const char*> getRequiredExtensions();
@@ -57,6 +59,8 @@ private:
 
     QueueFamilyIndices _queuefamilyIndices;
     VkSampleCountFlagBits _msaaSamples;
+
+    VkCommandPool _commandPool;
 
 public:
     RenderGlobals(RenderGlobals const& rhs) = delete;

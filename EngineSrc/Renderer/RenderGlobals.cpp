@@ -56,6 +56,11 @@ VkSampleCountFlagBits RenderGlobals::getMSAASamples() const
     return _msaaSamples;
 }
 
+VkCommandPool RenderGlobals::getCommandPool() const
+{
+    return _commandPool;
+}
+
 RenderGlobals::RenderGlobals() 
 {
     createInstance();
@@ -63,6 +68,8 @@ RenderGlobals::RenderGlobals()
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+
+    createCommandPool();
 }
 
 
@@ -202,6 +209,17 @@ void RenderGlobals::createLogicalDevice()
 
     vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.graphicsFamily.value(), 0, &_graphicsQueue);
     vkGetDeviceQueue(_logicalDevice, _queuefamilyIndices.presentFamily.value(), 0, &_presentQueue);
+}
+
+void RenderGlobals::createCommandPool()
+{
+    VkCommandPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = _queuefamilyIndices.graphicsFamily.value();
+
+    VkResult result = vkCreateCommandPool(_logicalDevice, &poolInfo, nullptr, &_commandPool);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create command pool.");
 }
 
 bool RenderGlobals::checkValidateLayerSupport()

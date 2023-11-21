@@ -8,11 +8,13 @@ namespace game
 {
 Game2D::Game2D() : Gust::Layer("Game World")
 {
-    //_vulkan = nullptr;
-    _vulkan = new Gust::Vulkan("Gust Engine");
+    _vulkan = nullptr;
+    //_vulkan = new Gust::Vulkan("Gust Engine");
     //_renderingEngine = new Gust::Renderer;
     //_renderingEngine->initVulkan("Wow");
     _renderingEngine = nullptr;
+
+    _vulkanDemo = new Gust::VulkanDemo();
 }
 
 void Game2D::attach() 
@@ -26,7 +28,8 @@ void Game2D::detach()
 
 void Game2D::update(Gust::TimeStep timeStep) 
 {
-    _vulkan->drawFrame(timeStep);
+    //_vulkan->drawFrame(timeStep);
+    _vulkanDemo->run(timeStep);
 }
 
 void Game2D::handleEvent(Gust::Event& ent) 

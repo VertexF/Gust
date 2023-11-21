@@ -40,7 +40,6 @@ private:
     void createFramebuffer();
     void createDescriptionSetLayout();
     void createGraphicsPipeline();
-    void createCommandPool();
     void createTextureImage();
     void createTextureImageView();
     void createTextureSampler();
@@ -77,8 +76,6 @@ private:
 
     VkShaderModule createShaderModule(const std::vector<char> &code);
 
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommand(VkCommandBuffer commandBuffer);
     void copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize size);
 
     void updateUniformBuffers(uint32_t currentImage, TimeStep timestep);
@@ -107,8 +104,6 @@ private:
 
     VkPipelineLayout _pipelineLayout;
     VkPipeline _graphicsPipeline;
-
-    VkCommandPool _commandPool;
 
     VkImage _textureImage;
     VkDeviceMemory _textureImageMemory;

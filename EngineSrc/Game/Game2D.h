@@ -9,6 +9,8 @@
 #include "Renderer/Vulkan.h"
 #include "Renderer/RenderingEngine.h"
 
+#include "VkRenderer/VulkanDemo.h"
+
 namespace game 
 {
 
@@ -29,6 +31,7 @@ public:
 private:
     Gust::Vulkan* _vulkan;
     Gust::Renderer* _renderingEngine;
+    Gust::VulkanDemo* _vulkanDemo;
 
     int _mouseButton = 0;
 };

@@ -34,6 +34,12 @@ private:
     {
     }
 
+    ~Global() 
+    {
+        glfwDestroyWindow(_window);
+        glfwTerminate();
+    }
+
     GLFWwindow* _window;
 
 public:

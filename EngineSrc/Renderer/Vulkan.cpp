@@ -141,6 +141,8 @@ void Vulkan::drawFrame(TimeStep timestep)
 
 void Vulkan::initVulkan(const char* title)
 {
+    _queuefamilyIndices = findQueueFamilies(RenderGlobals::getInstance().getPhysicalDevice(), RenderGlobals::getInstance().getSurface());
+
     createSwapChain();
     createImageView();
     createRenderPass();
@@ -153,13 +155,10 @@ void Vulkan::initVulkan(const char* title)
     createDescriptionSetLayout();
     createGraphicsPipeline();
 
-    createCommandPool();
-
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
 
-    //createGeometry();
     loadModel();
 
     createVertexBuffer();
@@ -176,7 +175,6 @@ void Vulkan::initVulkan(const char* title)
 
 void Vulkan::createSwapChain()
 {
-    _queuefamilyIndices = findQueueFamilies(RenderGlobals::getInstance().getPhysicalDevice(), RenderGlobals::getInstance().getSurface());
     _msaaSamples = RenderGlobals::getInstance().getMSAASamples();
 
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(RenderGlobals::getInstance().getPhysicalDevice(), RenderGlobals::getInstance().getSurface());
@@ -440,7 +438,7 @@ void Vulkan::createGraphicsPipeline()
     rasteriser.rasterizerDiscardEnable = VK_FALSE;
     rasteriser.polygonMode = VK_POLYGON_MODE_FILL;
     rasteriser.lineWidth = 1.f;
-    rasteriser.cullMode = VK_CULL_MODE_NONE;
+    rasteriser.cullMode = VK_CULL_MODE_BACK_BIT;
     rasteriser.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasteriser.depthBiasClamp = VK_FALSE;
 
@@ -514,17 +512,6 @@ void Vulkan::createGraphicsPipeline()
 
     vkDestroyShaderModule(RenderGlobals::getInstance().getLogicalDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(RenderGlobals::getInstance().getLogicalDevice(), vertexShaderModule, nullptr);
-}
-
-void Vulkan::createCommandPool()
-{
-    VkCommandPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = _queuefamilyIndices.graphicsFamily.value();
-
-    VkResult result = vkCreateCommandPool(RenderGlobals::getInstance().getLogicalDevice(), &poolInfo, nullptr, &_commandPool);
-    GUST_CORE_ASSERT(result != VK_SUCCESS, "Failed to create command pool.");
 }
 
 void Vulkan::createTextureImage() 
@@ -788,7 +775,7 @@ void Vulkan::createCommandBuffer()
 
     VkCommandBufferAllocateInfo allocateInfo = {};
     allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocateInfo.commandPool = _commandPool;
+    allocateInfo.commandPool = RenderGlobals::getInstance().getCommandPool();
     allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocateInfo.commandBufferCount = static_cast<uint32_t>(_commandBuffers.size());
 
@@ -1200,41 +1187,6 @@ VkShaderModule Vulkan::createShaderModule(const std::vector<char>& code)
     return shaderModule;
 }
 
-VkCommandBuffer Vulkan::beginSingleTimeCommands() 
-{
-    VkCommandBufferAllocateInfo allocateInfo = {};
-    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocateInfo.commandPool = _commandPool;
-    allocateInfo.commandBufferCount = 1;
-
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(RenderGlobals::getInstance().getLogicalDevice(), &allocateInfo, &commandBuffer);
-
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    return commandBuffer;
-}
-
-void Vulkan::endSingleTimeCommand(VkCommandBuffer commandBuffer) 
-{
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkQueueSubmit(RenderGlobals::getInstance().getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(RenderGlobals::getInstance().getGraphicsQueue());
-
-    vkFreeCommandBuffers(RenderGlobals::getInstance().getLogicalDevice(), _commandPool, 1, &commandBuffer);
-}
-
 void Vulkan::copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize size)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
@@ -1251,28 +1203,26 @@ void Vulkan::updateUniformBuffers(uint32_t currentImage, TimeStep timestep)
     _time += timestep;
     float aspect = 1280.f / 720.f;
 
-    //model = glm::translate(glm::mat4x4(1.f), { 0.f, -2.5f, 0.f }) *
-    //                       glm::rotate(glm::mat4x4(1.f), _time * glm::radians(90.f),
-    //                       glm::vec3(0, 0, 1));
-
-
     //TODO: Move the camera calculations out of here and into a camera class.
     UniformBufferObject uniformBufferObj;
-    //uniformBufferObj.view = glm::inverse(glm::translate(glm::mat4x4(1.f), { 0.f, 0.0f, 0.f }) *
-    //                                     glm::rotate(glm::mat4x4(1.f), glm::radians(0.f),
-    //                                     glm::vec3(0, 0, 1)));
-    //uniformBufferObj.projection = glm::ortho(-aspect * 4.5f, aspect * 4.5f, -4.5f, 4.5f);
+
+    //glm::vec3 forward = glm::vec3(2.0f, 2.0f, 2.0f);
+    //forward.x += _time;
+    //forward.y += _time;
+    //forward.z += _time;
+    glm::vec3 forward = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
+
+    glm::vec3 position = glm::vec3(0.f, 0.f, 0.f);
+
+    glm::vec3 modelPosition = glm::vec3(5.f, 0.f, 0.f);
+    //position.y -= _time;
 
     //TODO: Design idea, do something like uniformBufferObj.model = Entity.getMeshTransform();
-    uniformBufferObj.model = glm::rotate(glm::mat4(1.0f), _time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    uniformBufferObj.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    uniformBufferObj.projection = glm::perspective(glm::radians(45.0f), _swapChainExtent.width / (float)_swapChainExtent.height, 0.1f, 10.0f);
+    uniformBufferObj.model = glm::translate(glm::rotate(glm::mat4(1.0f), _time * glm::radians(0.0f), glm::vec3(0.f, 0.f, 1.f)), modelPosition); // glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 0.1f));
+    uniformBufferObj.view = glm::translate(glm::rotate(glm::lookAt(glm::vec3(0.f, 0.f, 0.f), forward, up), glm::radians(0.0f) * _time, glm::vec3(0.f, 0.f, 1.f)), position);
+    uniformBufferObj.projection = glm::perspective(glm::radians(45.0f), _swapChainExtent.width / (float)_swapChainExtent.height, 0.001f, 10.0f);
     uniformBufferObj.projection[1][1] *= -1;
-
-    //for (int i = 0; i < _vertices.size(); i++) 
-    //{
-    //    _vertices[i].pos = _vertices[i].pos * model;
-    //}
 
     memcpy(_uniformBufferMapped[currentImage], &uniformBufferObj, sizeof(uniformBufferObj));
 }
