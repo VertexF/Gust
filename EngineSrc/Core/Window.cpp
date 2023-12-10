@@ -5,7 +5,9 @@
 #include "Events/ApplicationEvent.h"
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
-#include "Renderer/Vulkan.h"
+
+#include "VkRenderer/RenderGlobals.h"
+//#include "Renderer/Vulkan.h"
 
 namespace Gust 
 {
@@ -24,12 +26,31 @@ Window::Window(const WindowProperties& props)
     {
         GUST_CRITICAL("GLFW could not start!\n");
     }
+    //Abstract away the windows implementation?
+    //Leave this here, this is how you do fullscreen properly in GLFW
+    //Pass in the monitor to the glfwCreateWindow.
+    //GLFWmonitor *const monitor =  glfwGetPrimaryMonitor();
+    //const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
+    //glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    //glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    //glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    //glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    //_windowData.width = mode->width;
+    //_windowData.height = mode->height;
+
+    //glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    //Global::getInstance().setWindow(glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, monitor, nullptr));
+    //glfwSetWindowMonitor(Global::getInstance().getWindow(), monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    //Abstract away the windows implementation?
     Global::getInstance().setWindow(glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr));
-    //_window = glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr);
+    Global::getInstance().setWindowExtent(_windowData.width, _windowData.height);
+    RenderGlobals::getInstance();
+
 
     glfwSetWindowUserPointer(Global::getInstance().getWindow(), &_windowData);
 
@@ -38,6 +59,7 @@ Window::Window(const WindowProperties& props)
             WindowData& windowData = *(WindowData*)(glfwGetWindowUserPointer(window));
             windowData.width = width;
             windowData.height = height;
+            Global::getInstance().setWindowExtent(windowData.width, windowData.height);
 
             WindowResizeEvent windowResizeEvent(width, height);
             windowData.eventCallback(windowResizeEvent);

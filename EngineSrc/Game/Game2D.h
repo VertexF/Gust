@@ -6,8 +6,8 @@
 #include "Events/KeyEvent.h"
 #include "Core/TimeStep.h"
 #include "Core/Layer.h"
-#include "Renderer/Vulkan.h"
-#include "Renderer/RenderingEngine.h"
+//#include "Renderer/Vulkan.h"
+//#include "Renderer/RenderingEngine.h"
 
 #include "VkRenderer/VulkanDemo.h"
 
@@ -29,8 +29,8 @@ public:
     bool keyReleased(Gust::ReleasedKeyEvent& ent);
     bool mouseReleased(Gust::MouseButtonReleasedEvent& ent);
 private:
-    Gust::Vulkan* _vulkan;
-    Gust::Renderer* _renderingEngine;
+    //Gust::Vulkan* _vulkan;
+    //Gust::Renderer* _renderingEngine;
     Gust::VulkanDemo* _vulkanDemo;
 
     int _mouseButton = 0;

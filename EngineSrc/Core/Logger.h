@@ -23,7 +23,7 @@ private:
 }
 
 //NOTE that is is also defined the in the CMake file.
-#define GUST_DEBUG 1
+//#define GUST_DEBUG 1
 #ifdef GUST_DEBUG
     #define GUST_CRITICAL(...) Gust::Logger::getLogger()->critical(__VA_ARGS__)
     #define GUST_ERROR(...) Gust::Logger::getLogger()->error(__VA_ARGS__)

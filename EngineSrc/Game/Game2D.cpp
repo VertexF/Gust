@@ -8,11 +8,11 @@ namespace game
 {
 Game2D::Game2D() : Gust::Layer("Game World")
 {
-    _vulkan = nullptr;
+    //_vulkan = nullptr;
     //_vulkan = new Gust::Vulkan("Gust Engine");
     //_renderingEngine = new Gust::Renderer;
     //_renderingEngine->initVulkan("Wow");
-    _renderingEngine = nullptr;
+    //_renderingEngine = nullptr;
 
     _vulkanDemo = new Gust::VulkanDemo();
 }
@@ -42,13 +42,11 @@ void Game2D::handleEvent(Gust::Event& ent)
 
 bool Game2D::keyPressed(Gust::PressedKeyEvent& ent) 
 {
-    GUST_INFO("Keycode is: {0}", ent.getKeyCode());
     return false;
 }
 
 bool Game2D::keyReleased(Gust::ReleasedKeyEvent& ent) 
 {
-    GUST_INFO("Keycode is: {0}", ent.getKeyCode());
     if (ent.getKeyCode() == GUST_KEY_ESCAPE)
     {
         Global::getInstance().running = false;

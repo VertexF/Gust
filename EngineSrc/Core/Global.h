@@ -5,6 +5,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "vulkan/vulkan.h"
+
 #include "Logger.h"
 
 class Global
@@ -28,6 +30,18 @@ public:
         _window = window;
     }
 
+    void setWindowExtent(int width, int height) 
+    {
+        _windowExtent.width = static_cast<uint32_t>(width);
+        _windowExtent.height = static_cast<uint32_t>(height);
+    }
+
+    VkExtent2D getWindowExtent() const 
+    {
+        return _windowExtent;
+    }
+
+
     bool running;
 private:
     Global() : running(true), _window(nullptr)
@@ -41,6 +55,7 @@ private:
     }
 
     GLFWwindow* _window;
+    VkExtent2D _windowExtent;
 
 public:
     Global(Global const& rhs) = delete;
