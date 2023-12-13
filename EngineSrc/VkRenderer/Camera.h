@@ -24,9 +24,12 @@ public:
     const glm::mat4& getProjection() const;
     const glm::mat4& getView() const;
     const glm::mat4& getViewProjection() const;
+    const glm::mat4& getInverseView() const;
+    const glm::vec3 getPosition() const;
 private:
     glm::mat4 _projectionMatrix;
     glm::mat4 _viewMatrix;
+    glm::mat4 _inverseViewMatrix;
 
     glm::vec3 _position;
     glm::vec3 _rotation;

@@ -67,4 +67,17 @@ glm::mat4 TransformComponent::normalMatrix()
     };
 }
 
+GameObject GameObject::makePointLight(float intensity /*= 10.f*/, float radius /*= 0.1f*/, 
+                                      glm::vec3 colour /*= glm::vec3(1.f)*/) 
+{
+    GameObject gameObject = createGameObject();
+    gameObject.colour = colour;
+    gameObject.transform.scale.x = radius;
+    gameObject.pointLight = new PointLightComponent();
+    gameObject.pointLight->lightIntensity = intensity;
+    gameObject.model = nullptr;
+
+    return gameObject;
+}
+
 }//Gust

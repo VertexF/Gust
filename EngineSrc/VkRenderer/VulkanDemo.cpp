@@ -8,15 +8,14 @@
 #include "glm/gtc/constants.hpp"
 
 #include "Core/Logger.h"
-#include "FrameInfo.h"
 
 namespace Gust 
 {
 
 VulkanDemo::VulkanDemo() : _viewerObject(GameObject::createGameObject()), 
     _globalPool(DescriptorPool::Builder().setMaxSets(SwapChain::MAX_FRAMES_IN_FLIGHT)
-                                          .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT)
-                                          .build())
+                                         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT)
+                                         .build())
 {
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) 
     {
@@ -27,7 +26,7 @@ VulkanDemo::VulkanDemo() : _viewerObject(GameObject::createGameObject()),
     }
 
     _globalSetLayout = DescriptorSetLayout::Builder()
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
 
     for (int i = 0; i < _globalDescriptionSets.size(); i++) 
@@ -38,6 +37,7 @@ VulkanDemo::VulkanDemo() : _viewerObject(GameObject::createGameObject()),
 
     loadGameObjects();
     _simpleRenderSystem.init(_renderer.getSwapChainRenderPass(), _globalSetLayout->getDescriptorSetLayout());
+    _pointLightSystem.init(_renderer.getSwapChainRenderPass(), _globalSetLayout->getDescriptorSetLayout());
     _viewerObject.transform.translation.z = 2.5f;
 }
 
@@ -49,7 +49,6 @@ VulkanDemo::~VulkanDemo()
 
 void VulkanDemo::run(TimeStep timestep)
 {
-    //_camera.setViewDirection(glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.0f, -0.1f));
     _camerController.moveInPlaneXZ(timestep, _viewerObject);
     _camera.setViewYXZ(_viewerObject.transform.translation, _viewerObject.transform.rotation);
 
@@ -59,18 +58,22 @@ void VulkanDemo::run(TimeStep timestep)
     if (auto commandBuffer = _renderer.beginFrame())
     {
         int frameIndex = _renderer.getFrameIndex();
-        FrameInfo frameInfo { frameIndex, timestep, commandBuffer, _camera, _globalDescriptionSets[frameIndex]};
+        FrameInfo frameInfo { frameIndex, timestep, commandBuffer, _camera, _globalDescriptionSets[frameIndex], _gameObjects};
 
         //Update
-        _uniBufferObj.projectionView = _camera.getProjection() * _camera.getView();
-        _uniBufferObj.lightPosition.y = glm::mod(_uniBufferObj.lightPosition.y + 0.001f, glm::two_pi<float>());
-        _uniBufferObj.lightPosition.x = glm::mod(_uniBufferObj.lightPosition.x + 0.002f, glm::two_pi<float>());
-        //_uniBufferObj.lightPosition.z = glm::mod(_uniBufferObj.lightPosition.z + 0.005f, glm::two_pi<float>());
+        _uniBufferObj.projection = _camera.getProjection();
+        _uniBufferObj.view = _camera.getView();
+        _uniBufferObj.inverseView = _camera.getInverseView();
+        _pointLightSystem.update(frameInfo, _uniBufferObj);
+        //_uniBufferObj.lightPosition.y = glm::mod(_uniBufferObj.lightPosition.y + 2.f * timestep, glm::two_pi<float>());
+        //_uniBufferObj.lightPosition.x = glm::mod(_uniBufferObj.lightPosition.x + 3.f * timestep, glm::two_pi<float>());
+        //_uniBufferObj.lightPosition.z = glm::mod(_uniBufferObj.lightPosition.z + 3.f * timestep, glm::two_pi<float>());
         _globalUniformBuffers[frameIndex]->writeToBuffer(&_uniBufferObj);
 
         //Render
         _renderer.beginSwapChainRenderPass(commandBuffer);
-        _simpleRenderSystem.renderGameObjects(frameInfo, _gameObjects);
+        _simpleRenderSystem.renderGameObjects(frameInfo);
+        _pointLightSystem.render(frameInfo);
         _renderer.endSwapChainRenderPass(commandBuffer);
         _renderer.endFrame();
     }
@@ -95,9 +98,34 @@ void VulkanDemo::loadGameObjects()
     floor.transform.translation = { 0.f, 0.5f, 0.f };
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
 
-    _gameObjects.push_back(std::move(smoothVase));
-    _gameObjects.push_back(std::move(flatVase));
-    _gameObjects.push_back(std::move(floor));
+    std::vector<glm::vec3> lightColours =
+    {
+        { 1.f, 0.f, 0.f },
+        { 0.f, 0.f, 1.f },
+        { 0.f, 1.f, 0.f },
+        { 1.f,  1.f, 0.f },
+        { 0.f, 1.f, 1.f },
+        { 1.f,  1.f, 1.f }
+    };
+
+    for (int i = 0; i < lightColours.size(); i++) 
+    {
+        auto pointLight = GameObject::makePointLight(0.3f);
+        pointLight.colour = lightColours[i];
+        auto rotateLight = glm::rotate
+        (
+            glm::mat4(1.f),
+            (i * glm::two_pi<float>()) / lightColours.size(),
+            { 0.f, -1.f, 0.f }
+        );
+
+        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.0f, -0.5f, -1.0f, 1.f));
+        _gameObjects.emplace(pointLight.getID(), std::move(pointLight));
+    }
+
+    _gameObjects.emplace(smoothVase.getID(), std::move(smoothVase));
+    _gameObjects.emplace(flatVase.getID(), std::move(flatVase));
+    _gameObjects.emplace(floor.getID(), std::move(floor));
 }
 
 }//GUST

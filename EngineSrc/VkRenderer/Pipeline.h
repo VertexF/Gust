@@ -12,6 +12,7 @@ struct PipelineConfigInfo
     PipelineConfigInfo() 
     {
         inputAssembly = {};
+        viewportInfo = {};
         rasterisationInfo = {};
         multisampleInfo = {};
         colourBlendAttachment = {};
@@ -23,7 +24,10 @@ struct PipelineConfigInfo
     PipelineConfigInfo(const PipelineConfigInfo&) = delete;
     PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
 
+    std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
     VkPipelineInputAssemblyStateCreateInfo inputAssembly;
+    VkPipelineViewportStateCreateInfo viewportInfo;
     VkPipelineRasterizationStateCreateInfo rasterisationInfo;
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
     VkPipelineColorBlendAttachmentState colourBlendAttachment;
@@ -48,6 +52,7 @@ public:
     void bind(VkCommandBuffer commandBuffer);
 
     static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
+    static void enableAlphaBlending(PipelineConfigInfo& configInfo);
 private:
     static std::vector<char> readFile(const char* filepath);
     void createGraphicsPipeline(const char* vertexFilePath, const char* fragFilePath, const PipelineConfigInfo& config);

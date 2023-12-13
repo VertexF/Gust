@@ -11,21 +11,15 @@
 #include "Renderer.h"
 #include "GameObject.h"
 #include "Camera.h"
-#include "RenderSystem.h"
+#include "Systems/RenderSystem.h"
+#include "Systems/PointLightSystem.h"
 #include "CameraController.h"
 #include "Buffer.h"
 #include "Descriptors.h"
+#include "FrameInfo.h"
 
 namespace Gust 
 {
-struct GlobalUBO
-{
-    glm::mat4 projectionView{ 1.f };
-    glm::vec4 ambientLightColour{ 1.f, 1.f, 1.f, 0.03f };
-    glm::vec3 lightPosition{ 0.f };
-    alignas(16) glm::vec4 lightColour{ 1.f };
-};
-
 
 class VulkanDemo
 {
@@ -46,6 +40,7 @@ private:
     Camera _camera;
     CameraController _camerController;
     RenderSystem _simpleRenderSystem;
+    PointLightSystem _pointLightSystem;
 
     GameObject _viewerObject;
     std::vector<Buffer*> _globalUniformBuffers;
@@ -53,7 +48,7 @@ private:
     DescriptorPool* _globalPool;
     DescriptorSetLayout* _globalSetLayout;
     std::array<VkDescriptorSet, SwapChain::MAX_FRAMES_IN_FLIGHT> _globalDescriptionSets;
-    std::vector<GameObject> _gameObjects;
+    std::unordered_map<uint32_t, GameObject> _gameObjects;
 
     GlobalUBO _uniBufferObj;
 };

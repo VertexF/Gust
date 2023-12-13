@@ -1,11 +1,11 @@
 #ifndef RENDER_SYSTEM_HDR
 #define RENDER_SYSTEM_HDR
 
-#include "RenderGlobals.h"
-#include "GameObject.h"
-#include "Pipeline.h"
-#include "Camera.h"
-#include "FrameInfo.h"
+#include "VkRenderer/RenderGlobals.h"
+#include "VkRenderer/GameObject.h"
+#include "VkRenderer/Pipeline.h"
+#include "VkRenderer/Camera.h"
+#include "VkRenderer/FrameInfo.h"
 
 // std
 #include <memory>
@@ -25,7 +25,7 @@ public:
 
     void init(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 
-    void renderGameObjects(FrameInfo &frameInfo, std::vector<GameObject>& gameObjects);
+    void renderGameObjects(FrameInfo &frameInfo);
 
 private:
     void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);

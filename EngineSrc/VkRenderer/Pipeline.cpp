@@ -33,6 +33,12 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo)
     configInfo.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     configInfo.inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+    configInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    configInfo.viewportInfo.viewportCount = 1;
+    configInfo.viewportInfo.pViewports = nullptr;
+    configInfo.viewportInfo.scissorCount = 1;
+    configInfo.viewportInfo.pScissors = nullptr;
+
     configInfo.rasterisationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     configInfo.rasterisationInfo.depthClampEnable = VK_FALSE;
     configInfo.rasterisationInfo.rasterizerDiscardEnable = VK_FALSE;
@@ -89,6 +95,22 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo)
     configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
     configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
+
+    configInfo.bindingDescriptions = Model::Vertex::getBindingDescriptions();
+    configInfo.attributeDescriptions = Model::Vertex::getAttributeDescriptions();
+}
+
+void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo)
+{
+    configInfo.colourBlendAttachment.blendEnable = VK_TRUE;
+    configInfo.colourBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | 
+                                                      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    configInfo.colourBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    configInfo.colourBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    configInfo.colourBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    configInfo.colourBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    configInfo.colourBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    configInfo.colourBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
 std::vector<char> Pipeline::readFile(const char* filepath)
@@ -136,8 +158,8 @@ void Pipeline::createGraphicsPipeline(const char* vertexFilePath, const char* fr
     shaderStages[1].pNext = nullptr;
     shaderStages[1].pSpecializationInfo = nullptr;
 
-    std::vector<VkVertexInputBindingDescription> bindingDescription = Model::Vertex::getBindingDescriptions();
-    std::vector<VkVertexInputAttributeDescription> attributeDescription = Model::Vertex::getAttributeDescriptions();
+    auto& bindingDescription = config.bindingDescriptions; 
+    auto& attributeDescription = config.attributeDescriptions;// = Model::Vertex::getAttributeDescriptions();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescription.size());

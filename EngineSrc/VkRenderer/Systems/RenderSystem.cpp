@@ -67,18 +67,23 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
     _pipeline = new Pipeline("Assets/Shaders/simple.vert.spv", "Assets/Shaders/simple.frag.spv", pipelineConfig);
 }
 
-void RenderSystem::renderGameObjects(FrameInfo& frameInfo, std::vector<GameObject>& gameObjects)
+void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
     _pipeline->bind(frameInfo.commandBuffer);
 
     vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                             _pipelineLayout, 0, 1, &frameInfo.globalDescriptorSet, 0, nullptr);
 
-    for (auto& obj : gameObjects)
+    for (auto& keyValue : frameInfo.gameObjects)
     {
         //obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
         //obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.0005f, glm::two_pi<float>());
         //obj.transform.rotation.z = glm::mod(obj.transform.rotation.z + 0.0015f, glm::two_pi<float>());
+        auto& obj = keyValue.second;
+        if (obj.model == nullptr)
+        {
+            continue;
+        }
 
         SimplePushConstantData push = {};
         push.modelMatrix =  obj.transform.mat4();

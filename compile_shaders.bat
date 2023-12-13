@@ -9,6 +9,8 @@ echo Note: Original shaders are commented out
 
 D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\simple.vert -o EngineSrc\Assets\Shaders\simple.vert.spv
 D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\simple.frag -o EngineSrc\Assets\Shaders\simple.frag.spv
+D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\pointLight.vert -o EngineSrc\Assets\Shaders\pointLight.vert.spv
+D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\pointLight.frag -o EngineSrc\Assets\Shaders\pointLight.frag.spv
 
 :: if EXIST C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\ (
 :: copy EngineSrc\Assets\Shaders\triangle.vert.spv C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\
@@ -29,6 +31,8 @@ D:\Windows\VulkanSDK\1.3.236.0\Bin\glslc.exe EngineSrc\Assets\Shaders\simple.fra
 if EXIST C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\ (
   copy EngineSrc\Assets\Shaders\simple.vert.spv C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\
   copy EngineSrc\Assets\Shaders\simple.frag.spv C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\
+  copy EngineSrc\Assets\Shaders\pointLight.vert.spv C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\
+  copy EngineSrc\Assets\Shaders\pointLight.frag.spv C:\Users\Dan\Documents\Development\git\GameEngine\VS\Assets\Shaders\
 ) else (
   echo Visual Studio Project has not been created!
 )
