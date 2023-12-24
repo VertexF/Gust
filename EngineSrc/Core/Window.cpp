@@ -7,7 +7,6 @@
 #include "Events/KeyEvent.h"
 
 #include "VkRenderer/RenderGlobals.h"
-//#include "Renderer/Vulkan.h"
 
 namespace Gust 
 {
@@ -18,9 +17,9 @@ Window::Window(const WindowProperties& props)
     _windowData.width = props.width;
     _windowData.height = props.height;
 
-    int width = 0;
-    int height = 0;
-    int channels = 0;
+    //int width = 0;
+    //int height = 0;
+    //int channels = 0;
 
     if (glfwInit() == false)
     {
@@ -50,7 +49,6 @@ Window::Window(const WindowProperties& props)
     Global::getInstance().setWindow(glfwCreateWindow(_windowData.width, _windowData.height, _windowData.title, nullptr, nullptr));
     Global::getInstance().setWindowExtent(_windowData.width, _windowData.height);
     RenderGlobals::getInstance();
-
 
     glfwSetWindowUserPointer(Global::getInstance().getWindow(), &_windowData);
 
@@ -164,11 +162,6 @@ bool Window::isVSync() const
 void Window::update()
 {
     glfwPollEvents();
-}
-
-void Window::waitDevice()
-{
-    //_vulkan->waitDevice();
 }
 
 } //GUST

@@ -10,6 +10,7 @@
 #include <stdexcept>
 
 #include "Core/Logger.h"
+#include "Core/Instrumentor.h"
 
 namespace Gust 
 {
@@ -33,12 +34,14 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::init(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
 {
+    GUST_PROFILE_FUNCTION();
     createPipelineLayout(globalSetLayout);
     createPipeline(renderPass);
 }
 
 void RenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 {
+    GUST_PROFILE_FUNCTION();
     VkPushConstantRange pushConstantsRange = {};
     pushConstantsRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantsRange.offset = 0;
@@ -58,6 +61,7 @@ void RenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 
 void RenderSystem::createPipeline(VkRenderPass renderPass)
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_pipelineLayout == nullptr, "Cannot create pipeline before pipeline layoutn.");
 
     PipelineConfigInfo pipelineConfig;
@@ -69,6 +73,7 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 
 void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
+    GUST_PROFILE_FUNCTION();
     _pipeline->bind(frameInfo.commandBuffer);
 
     vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -76,11 +81,8 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 
     for (auto& keyValue : frameInfo.gameObjects)
     {
-        //obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
-        //obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.0005f, glm::two_pi<float>());
-        //obj.transform.rotation.z = glm::mod(obj.transform.rotation.z + 0.0015f, glm::two_pi<float>());
         auto& obj = keyValue.second;
-        if (obj.model == nullptr)
+        if (obj.model == nullptr || ((obj.currentState & State::ACTIVE) == false))
         {
             continue;
         }

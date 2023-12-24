@@ -201,7 +201,8 @@ void DescriptorWriter::overwrite(VkDescriptorSet& set)
         write.dstSet = set;
     }
 
-    vkUpdateDescriptorSets(RenderGlobals::getInstance().getDevice()->getLogicalDevice(), _writes.size(), _writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(RenderGlobals::getInstance().getDevice()->getLogicalDevice(), 
+                           static_cast<uint32_t>(_writes.size()), _writes.data(), 0, nullptr);
 }
 
 

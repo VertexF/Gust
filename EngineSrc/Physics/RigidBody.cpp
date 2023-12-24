@@ -1,10 +1,13 @@
-#include "GameObject.h"
+#include "RigidBody.h"
 
-namespace Gust 
+#include "Core/Instrumentor.h"
+
+namespace Gust
 {
 
-glm::mat4 TransformComponent::mat4()
+glm::mat4 RigidBody::mat4()
 {
+    GUST_PROFILE_FUNCTION();
     const float c3 = glm::cos(rotation.z);
     const float s3 = glm::sin(rotation.z);
     const float c2 = glm::cos(rotation.x);
@@ -30,12 +33,13 @@ glm::mat4 TransformComponent::mat4()
             scale.z * (c1 * c2),
             0.0f,
         },
-        {translation.x, translation.y, translation.z, 1.0f}
+        { translation.x, translation.y, translation.z, 1.0f }
     };
 }
 
-glm::mat4 TransformComponent::normalMatrix()
+glm::mat4 RigidBody::normalMatrix()
 {
+    GUST_PROFILE_FUNCTION();
     const float c3 = glm::cos(rotation.z);
     const float s3 = glm::sin(rotation.z);
     const float c2 = glm::cos(rotation.x);
@@ -66,18 +70,4 @@ glm::mat4 TransformComponent::normalMatrix()
         {translation.x, translation.y, translation.z, 1.0f}
     };
 }
-
-GameObject GameObject::makePointLight(float intensity /*= 10.f*/, float radius /*= 0.1f*/, 
-                                      glm::vec3 colour /*= glm::vec3(1.f)*/) 
-{
-    GameObject gameObject = createGameObject();
-    gameObject.colour = colour;
-    gameObject.transform.scale.x = radius;
-    gameObject.pointLight = new PointLightComponent();
-    gameObject.pointLight->lightIntensity = intensity;
-    gameObject.model = nullptr;
-
-    return gameObject;
-}
-
 }//Gust

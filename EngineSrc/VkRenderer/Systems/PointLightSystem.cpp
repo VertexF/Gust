@@ -5,10 +5,13 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include "glm/glm.hpp"
-#include "glm/gtc/constants.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Core/Logger.h"
+#include "Core/Instrumentor.h"
+
 #include "VkRenderer/RenderGlobals.h"
 
 namespace Gust 
@@ -34,12 +37,15 @@ PointLightSystem::~PointLightSystem()
 
 void PointLightSystem::init(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
 {
+    GUST_PROFILE_FUNCTION();
     createPipelineLayout(globalSetLayout);
     createPipeline(renderPass);
 }
 
 void PointLightSystem::update(FrameInfo& frameInfo, GlobalUBO& ubo)
 {
+    GUST_PROFILE_FUNCTION();
+    //TODO: Move stuff out of here that isn't rendering related. Physics needs to be in it's own place.
     auto rotateLight = glm::rotate(glm::mat4(1.f), 0.5f * frameInfo.frameTime, { 0.f, -1.f, 0.f });
     int lightIndex = 0;
     for (auto& keyValue : frameInfo.gameObjects)
@@ -66,11 +72,12 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUBO& ubo)
 
 void PointLightSystem::render(FrameInfo& frameInfo) 
 {
+    GUST_PROFILE_FUNCTION();
     std::map<float, uint32_t> sorted;
     for (auto &keyValue : frameInfo.gameObjects) 
     {
         auto& object = keyValue.second;
-        if (object.pointLight == nullptr) 
+        if (object.pointLight == nullptr || ((object.currentState & State::ACTIVE) == false))
         {
             continue;
         }
@@ -104,6 +111,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
 
 void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout) 
 {
+    GUST_PROFILE_FUNCTION();
     VkPushConstantRange pushConstantsrange = {};
     pushConstantsrange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantsrange.offset = 0;
@@ -125,6 +133,7 @@ void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayou
 
 void PointLightSystem::createPipeline(VkRenderPass renderPass) 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_pipelineLayout == nullptr, "Cannot create pipeline before pipeline layout.");
 
     PipelineConfigInfo pipelineConfig = {};

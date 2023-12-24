@@ -8,18 +8,21 @@
 #include "Window.h"
 #include "Global.h"
 
+#include "Core/Instrumentor.h"
+
 namespace Gust 
 {
 
 Application::Application(const char* title) : _lastFrameTime(0.f)
 {
+    GUST_PROFILE_FUNCTION();
     _window = new Window(WindowProperties(title));
     _window->setCallbackFunction(std::bind(&Application::handleEvent, this, std::placeholders::_1));
 }
 
 Application::~Application()
 {
-
+    delete _window;
 }
 
 void Application::handleEvent(Event& ent) 
@@ -41,6 +44,7 @@ void Application::handleEvent(Event& ent)
 
 void Application::run() 
 {
+    GUST_PROFILE_FUNCTION();
     _layers.pushLayer(new game::Game2D());
     while (Global::getInstance().running) 
     {
@@ -51,7 +55,7 @@ void Application::run()
 
         if (_minimized == false)
         {
-            for (Layer *layer : _layers) 
+            for (Layer* layer : _layers)
             {
                 layer->update(timestep);
             }
@@ -59,9 +63,6 @@ void Application::run()
 
         _window->update();
     }
-
-    //TODO: Make this work outside.
-    _window->waitDevice();
 }
 
 bool Application::windowClosed(WindowClosedEvent& closed) 

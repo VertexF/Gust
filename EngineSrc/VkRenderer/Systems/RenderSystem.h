@@ -1,15 +1,14 @@
 #ifndef RENDER_SYSTEM_HDR
 #define RENDER_SYSTEM_HDR
 
+#include <vector>
+
+#include "Entity/GameObject.h"
+
 #include "VkRenderer/RenderGlobals.h"
-#include "VkRenderer/GameObject.h"
 #include "VkRenderer/Pipeline.h"
 #include "VkRenderer/Camera.h"
 #include "VkRenderer/FrameInfo.h"
-
-// std
-#include <memory>
-#include <vector>
 
 namespace Gust 
 {

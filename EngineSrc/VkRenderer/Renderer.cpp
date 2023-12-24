@@ -1,9 +1,8 @@
 #include "Renderer.h"
 
-#include <memory>
-
 #include "Core/Logger.h"
 #include "Core/Global.h"
+#include "Core/Instrumentor.h"
 
 namespace Gust
 {
@@ -11,6 +10,7 @@ namespace Gust
 
 Renderer::Renderer() : _swapchain(nullptr), _currentFrameIndex(0), _currentImageIndex(0)
 {
+    GUST_PROFILE_FUNCTION();
     recreateSwapchain();
     createCommandBuffers();
 }
@@ -53,6 +53,7 @@ int Renderer::getFrameIndex() const
 
 VkCommandBuffer Renderer::beginFrame() 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_isFrameStarted, "You can not begin beginFrame while already in progress.");
 
     VkResult result = _swapchain->acquireNextImage(&_currentImageIndex);
@@ -78,6 +79,7 @@ VkCommandBuffer Renderer::beginFrame()
 
 void Renderer::endFrame() 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_isFrameStarted == false, "You can not end frame while a frame is in progress.");
 
     VkCommandBuffer commandBuffer = getCurrentCommandBuffer();
@@ -98,6 +100,7 @@ void Renderer::endFrame()
 
 void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_isFrameStarted == false, "You can not call beginSwapChainRenderPass if a frame is not in progress.");
     GUST_CORE_ASSERT(commandBuffer != getCurrentCommandBuffer(), "You can not begin render pass on a command buffer from a different frame.");
 
@@ -119,8 +122,8 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
     VkViewport viewport = {};
     viewport.x = 0;
     viewport.y = 0;
-    viewport.width = static_cast<uint32_t>(_swapchain->getSwapChainExtent().width);
-    viewport.height = static_cast<uint32_t>(_swapchain->getSwapChainExtent().height);
+    viewport.width = static_cast<float>(_swapchain->getSwapChainExtent().width);
+    viewport.height = static_cast<float>(_swapchain->getSwapChainExtent().height);
     viewport.minDepth = 0.f;
     viewport.maxDepth = 1.f;
     VkRect2D scissor = { {0, 0}, _swapchain->getSwapChainExtent() };
@@ -131,6 +134,7 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 
 void Renderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer) 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_isFrameStarted == false, "You can not call endSwapChainRenderPass if a frame is not in progress.");
     GUST_CORE_ASSERT(commandBuffer != getCurrentCommandBuffer(), "You can not begin render pass on a command buffer from a different frame.");
 
@@ -139,6 +143,7 @@ void Renderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 
 void Renderer::createCommandBuffers()
 {
+    GUST_PROFILE_FUNCTION();
     _commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
     VkCommandBufferAllocateInfo allocateInfo = {};
@@ -153,6 +158,7 @@ void Renderer::createCommandBuffers()
 
 void Renderer::freeCommandBuffers()
 {
+    GUST_PROFILE_FUNCTION();
     vkFreeCommandBuffers(RenderGlobals::getInstance().getDevice()->getLogicalDevice(), RenderGlobals::getInstance().getDevice()->getCommandPool(),
         static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
 
@@ -161,6 +167,7 @@ void Renderer::freeCommandBuffers()
 
 void Renderer::recreateSwapchain()
 {
+    GUST_PROFILE_FUNCTION();
     VkExtent2D extents = Global::getInstance().getWindowExtent();
     while (extents.height == 0 || extents.width == 0)
     {

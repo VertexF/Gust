@@ -57,7 +57,6 @@ public:
     bool isVSync() const;
 
     void update();
-    void waitDevice();
 };
 
 }

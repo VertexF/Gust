@@ -9,32 +9,21 @@ namespace Gust
 {
 struct PipelineConfigInfo 
 {
-    PipelineConfigInfo() 
-    {
-        inputAssembly = {};
-        viewportInfo = {};
-        rasterisationInfo = {};
-        multisampleInfo = {};
-        colourBlendAttachment = {};
-        colourBlendInfo = {};
-        depthStencil = {};
-        dynamicStateInfo = {};
-    }
-
+    PipelineConfigInfo() = default;
     PipelineConfigInfo(const PipelineConfigInfo&) = delete;
     PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
 
     std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly;
-    VkPipelineViewportStateCreateInfo viewportInfo;
-    VkPipelineRasterizationStateCreateInfo rasterisationInfo;
-    VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    VkPipelineColorBlendAttachmentState colourBlendAttachment;
-    VkPipelineColorBlendStateCreateInfo colourBlendInfo;
-    VkPipelineDepthStencilStateCreateInfo depthStencil;
-    std::vector<VkDynamicState> dynamicStateEnables;
-    VkPipelineDynamicStateCreateInfo dynamicStateInfo;
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    VkPipelineViewportStateCreateInfo viewportInfo{};
+    VkPipelineRasterizationStateCreateInfo rasterisationInfo{};
+    VkPipelineMultisampleStateCreateInfo multisampleInfo{};
+    VkPipelineColorBlendAttachmentState colourBlendAttachment{};
+    VkPipelineColorBlendStateCreateInfo colourBlendInfo{};
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    std::vector<VkDynamicState> dynamicStateEnables{};
+    VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
     VkPipelineLayout pipelineLayout = nullptr;
     VkRenderPass renderPass = nullptr;
     uint32_t subpass = 0;

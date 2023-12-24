@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "Core/Logger.h"
+#include "Core/Instrumentor.h"
 
 namespace Gust 
 {
@@ -11,6 +12,7 @@ Buffer::Buffer(VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageF
     : _instanceSize(instanceSize), _instanceCount(instanceCount), 
       _usageFlags(usageFlags), _memoryPropertyFlags(memoryPropertyFlags)
 {
+    GUST_PROFILE_FUNCTION();
     _alignmentSize = getAlignment(_instanceSize, minOffsetAlignment);
     _bufferSize = _alignmentSize * _instanceCount;
     RenderGlobals::getInstance().getDevice()->createBuffer(_bufferSize, _usageFlags, _memoryPropertyFlags, _buffer, _memory);
@@ -25,12 +27,14 @@ Buffer::~Buffer()
 
 VkResult Buffer::map(VkDeviceSize size /*= VK_WHOLE_SIZE*/, VkDeviceSize offset /*= 0*/) 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_buffer == nullptr && _memory == nullptr, "You cannout map data onto a buffer before it's created.");
     return vkMapMemory(RenderGlobals::getInstance().getDevice()->getLogicalDevice(), _memory, offset, size, 0, &_mapped);
 }
 
 void Buffer::unmap() 
 {
+    GUST_PROFILE_FUNCTION();
     if (_mapped) 
     {
         vkUnmapMemory(RenderGlobals::getInstance().getDevice()->getLogicalDevice(), _memory);
@@ -40,6 +44,7 @@ void Buffer::unmap()
 
 void Buffer::writeToBuffer(void* data, VkDeviceSize size/*= VK_WHOLE_SIZE*/, VkDeviceSize offset /*= 0*/) 
 {
+    GUST_PROFILE_FUNCTION();
     GUST_CORE_ASSERT(_mapped == nullptr, "Cannout copy to an unmapped buffer.");
 
     if (size == VK_WHOLE_SIZE) 
@@ -56,6 +61,7 @@ void Buffer::writeToBuffer(void* data, VkDeviceSize size/*= VK_WHOLE_SIZE*/, VkD
 
 VkResult Buffer::flush(VkDeviceSize size /*= VK_WHOLE_SIZE*/, VkDeviceSize offset /*= 0*/) 
 {
+    GUST_PROFILE_FUNCTION();
     VkMappedMemoryRange mappedRange = {};
     mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     mappedRange.memory = _memory;
@@ -72,6 +78,7 @@ VkDescriptorBufferInfo Buffer::descriptionInfo(VkDeviceSize size /*= VK_WHOLE_SI
 
 VkResult Buffer::invalidate(VkDeviceSize size /*= VK_WHOLE_SIZE*/, VkDeviceSize offset /*= 0*/) 
 {
+    GUST_PROFILE_FUNCTION();
     //This make the buffer visible to the host.
     VkMappedMemoryRange mappedRange = {};
     mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -146,6 +153,7 @@ VkDeviceSize Buffer::getBufferSize() const
 
 VkDeviceSize Buffer::getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment) 
 {
+    GUST_PROFILE_FUNCTION();
     if (minOffsetAlignment > 0) 
     {
         return (instanceSize + minOffsetAlignment - 1) & ~(minOffsetAlignment - 1);

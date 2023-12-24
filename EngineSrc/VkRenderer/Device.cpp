@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "Core/Logger.h"
+#include "Core/Instrumentor.h"
 
 namespace Gust 
 {
@@ -15,6 +16,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
                                                     const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
                                                     void* userData)
 {
+    GUST_PROFILE_FUNCTION();
     switch (messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
@@ -37,6 +39,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 VkResult createDebugUtilMessagerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* createInfo,
                                     const VkAllocationCallbacks* allocator, VkDebugUtilsMessengerEXT* debugMessenger)
 {
+    GUST_PROFILE_FUNCTION();
     auto function = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (function != nullptr)
     {
@@ -48,6 +51,7 @@ VkResult createDebugUtilMessagerEXT(VkInstance instance, const VkDebugUtilsMesse
 
 void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *allocator) 
 {
+    GUST_PROFILE_FUNCTION();
     auto function = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (function != nullptr) 
     {
@@ -57,6 +61,7 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 Device::Device() 
 {
+    GUST_PROFILE_FUNCTION();
     createInstance();
     setupDebugMessenger();
     createSurface();
@@ -67,6 +72,7 @@ Device::Device()
 
 Device::~Device()
 {
+    GUST_PROFILE_FUNCTION();
     vkDestroyCommandPool(_logicalDevice, _commandPool, nullptr);
     vkDestroyDevice(_logicalDevice, nullptr);
 
@@ -111,6 +117,7 @@ SwapChainSupportDetails Device::getSwapChainSupport()
 
 uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) 
 {
+    GUST_PROFILE_FUNCTION();
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(_physcialDevice, &memProperties);
 
@@ -133,6 +140,7 @@ QueueFamilyIndices Device::findPhysicalDeviceFamilies()
 
 VkFormat Device::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) 
 {
+    GUST_PROFILE_FUNCTION();
     for (VkFormat format : candidates) 
     {
         VkFormatProperties props = {};
@@ -154,6 +162,7 @@ VkFormat Device::findSupportedFormat(const std::vector<VkFormat>& candidates, Vk
 
 void Device::createBuffer(VkDeviceSize deviceSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) 
 {
+    GUST_PROFILE_FUNCTION();
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = deviceSize;
@@ -179,6 +188,7 @@ void Device::createBuffer(VkDeviceSize deviceSize, VkBufferUsageFlags usage, VkM
 
 VkCommandBuffer Device::beginSingleTimeCommands() 
 {
+    GUST_PROFILE_FUNCTION();
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -198,6 +208,7 @@ VkCommandBuffer Device::beginSingleTimeCommands()
 
 void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer) 
 {
+    GUST_PROFILE_FUNCTION();
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo = {};
@@ -213,6 +224,7 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 
 void Device::copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize deviceSize) 
 {
+    GUST_PROFILE_FUNCTION();
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferCopy copyRegion = {};
@@ -226,6 +238,7 @@ void Device::copyBuffer(VkBuffer sourceBuffer, VkBuffer destBuffer, VkDeviceSize
 
 void Device::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) 
 {
+    GUST_PROFILE_FUNCTION();
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferImageCopy region = {};
@@ -247,6 +260,7 @@ void Device::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, u
 
 void Device::createImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) 
 {
+    GUST_PROFILE_FUNCTION();
     VkResult result = vkCreateImage(_logicalDevice, &imageInfo, nullptr, &image);
     GUST_CORE_ASSERT(result != VK_SUCCESS, "Could not create image.");
 
@@ -267,6 +281,7 @@ void Device::createImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPro
 
 void Device::createInstance() 
 {
+    GUST_PROFILE_FUNCTION();
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Fireworks";
@@ -307,6 +322,7 @@ void Device::createInstance()
 
 void Device::setupDebugMessenger() 
 {
+    GUST_PROFILE_FUNCTION();
     if (enableValidationLayers == false) 
     {
         return;
@@ -320,6 +336,7 @@ void Device::setupDebugMessenger()
 
 void Device::createSurface() 
 {
+    GUST_PROFILE_FUNCTION();
     if (Global::getInstance().getWindow() == nullptr) 
     {
         GUST_CORE_ASSERT(true, "Window null.");
@@ -332,6 +349,7 @@ void Device::createSurface()
 
 void Device::pickPhysicalDevice() 
 {
+    GUST_PROFILE_FUNCTION();
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
     GUST_CORE_ASSERT(deviceCount == 0, "Could not any GPUs that suport Vulkan.");
@@ -350,12 +368,13 @@ void Device::pickPhysicalDevice()
     }
 
     GUST_CORE_ASSERT(_physcialDevice == VK_NULL_HANDLE, "Failed to find a suitable GPU.");
-    vkGetPhysicalDeviceProperties(_physcialDevice, &properties);
-    GUST_INFO("Physical device name: {0}", properties.deviceName);
+    vkGetPhysicalDeviceProperties(_physcialDevice, &deviceProperties);
+    GUST_INFO("Physical device name: {0}", deviceProperties.deviceName);
 }
 
 void Device::createLogicalDevice() 
 {
+    GUST_PROFILE_FUNCTION();
     QueueFamilyIndices indices = findQueueFamilies(_physcialDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -404,6 +423,7 @@ void Device::createLogicalDevice()
 
 void Device::createCommandPool() 
 {
+    GUST_PROFILE_FUNCTION();
     QueueFamilyIndices queueFamilyIndices = findPhysicalDeviceFamilies();
 
     VkCommandPoolCreateInfo poolInfo = {};
@@ -417,6 +437,7 @@ void Device::createCommandPool()
 
 bool Device::isDeviceSuitable(VkPhysicalDevice device) 
 {
+    GUST_PROFILE_FUNCTION();
     QueueFamilyIndices indices = findQueueFamilies(device);
 
     bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -436,6 +457,7 @@ bool Device::isDeviceSuitable(VkPhysicalDevice device)
 
 std::vector<const char*> Device::getRequiredExtensions() 
 {
+    GUST_PROFILE_FUNCTION();
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
@@ -451,6 +473,7 @@ std::vector<const char*> Device::getRequiredExtensions()
 
 bool Device::checkValidationLayerSupport() 
 {
+    GUST_PROFILE_FUNCTION();
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -480,6 +503,7 @@ bool Device::checkValidationLayerSupport()
 
 QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) 
 {
+    GUST_PROFILE_FUNCTION();
     QueueFamilyIndices indices;
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -515,6 +539,7 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device)
 
 void Device::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debugCreateInfo)
 {
+    GUST_PROFILE_FUNCTION();
     debugCreateInfo = {};
     debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -530,6 +555,7 @@ void Device::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 
 void Device::hasGLFWRequiredInstanceExtensions() 
 {
+    GUST_PROFILE_FUNCTION();
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -552,6 +578,7 @@ void Device::hasGLFWRequiredInstanceExtensions()
 
 bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) 
 {
+    GUST_PROFILE_FUNCTION();
     uint32_t extensionCount = 0;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -570,6 +597,7 @@ bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device)
 
 SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device)
 {
+    GUST_PROFILE_FUNCTION();
     SwapChainSupportDetails swapchainDetails;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &swapchainDetails.capabilities);
     uint32_t formatCount = 0;

@@ -1,7 +1,6 @@
 #ifndef DESCRIPTOR_HDR
 #define DESCRIPTOR_HDR
 
-//#include <memory>
 #include <unordered_map>
 #include <vector>
 

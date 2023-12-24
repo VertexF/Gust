@@ -1,11 +1,12 @@
 #include "Model.h"
 
 #include <unordered_map>
-#include <memory>
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
-#include "glm/gtx/hash.hpp"
+#include <tiny_obj_loader.h>
+#include <glm/gtx/hash.hpp>
+
+#include "Core/Instrumentor.h"
 
 #include "RenderUtils.h"
 
@@ -30,6 +31,7 @@ namespace Gust
 
 void Model::Builder::loadModel(const std::string& filepath) 
 {
+    GUST_PROFILE_FUNCTION();
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -99,6 +101,7 @@ void Model::Builder::loadModel(const std::string& filepath)
 
 Model::Model(const Builder& builder)
 {
+    GUST_PROFILE_FUNCTION();
     createVertexBuffers(builder.vertices);
     createIndexBuffers(builder.indices);
 }
@@ -115,6 +118,7 @@ Model::~Model()
 
 Model* Model::createModelFromFile(const std::string& filepath)
 {
+    GUST_PROFILE_FUNCTION();
     Builder builder = {};
     builder.loadModel(filepath);
     GUST_INFO("Vertices count: {0}", builder.vertices.size());
@@ -124,6 +128,7 @@ Model* Model::createModelFromFile(const std::string& filepath)
 
 void Model::bind(VkCommandBuffer commandBuffer) 
 {
+    GUST_PROFILE_FUNCTION();
     VkBuffer buffers[] = { _vertexBuffer->getBuffer()};
     VkDeviceSize offsets[] = {0};
 
@@ -136,6 +141,7 @@ void Model::bind(VkCommandBuffer commandBuffer)
 
 void Model::draw(VkCommandBuffer commandBuffer) 
 {
+    GUST_PROFILE_FUNCTION();
     if (_hasIndexBuffer) 
     {
         vkCmdDrawIndexed(commandBuffer, _indexCount, 1, 0, 0, 0);
@@ -148,6 +154,7 @@ void Model::draw(VkCommandBuffer commandBuffer)
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
 {
+    GUST_PROFILE_FUNCTION();
     _vertexCount = static_cast<uint32_t>(vertices.size());
     GUST_CORE_ASSERT(_vertexCount < 3, "Vertex count must be at least 3.");
     VkDeviceSize bufferSize = sizeof(vertices[0]) * _vertexCount;
@@ -158,13 +165,14 @@ void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
     stagingBuffer.map();
     stagingBuffer.writeToBuffer((void *)vertices.data());
 
-    _vertexBuffer = new Buffer{ vertexSize, _vertexCount, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };//std::move(stagingBuffer);
+    _vertexBuffer = new Buffer{ vertexSize, _vertexCount, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
 
     RenderGlobals::getInstance().getDevice()->copyBuffer(stagingBuffer.getBuffer(), _vertexBuffer->getBuffer(), bufferSize);
 }
 
 void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
 {
+    GUST_PROFILE_FUNCTION();
     _indexCount = static_cast<uint32_t>(indices.size());
     _hasIndexBuffer = _indexCount > 0;
     if (_hasIndexBuffer == false)
@@ -180,13 +188,14 @@ void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
     stagingBuffer.map();
     stagingBuffer.writeToBuffer((void*)indices.data());
 
-    _indexBuffer = new Buffer{ indexSize, _indexCount, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };//std::move(stagingBuffer);
+    _indexBuffer = new Buffer{ indexSize, _indexCount, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
 
     RenderGlobals::getInstance().getDevice()->copyBuffer(stagingBuffer.getBuffer(), _indexBuffer->getBuffer(), bufferSize);
 }
 
 std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions() 
 {
+    GUST_PROFILE_FUNCTION();
     std::vector<VkVertexInputBindingDescription> bindingDescription(1);
     bindingDescription[0].binding = 0;
     bindingDescription[0].stride = sizeof(Vertex);
@@ -197,6 +206,7 @@ std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptio
 
 std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions()
 {
+    GUST_PROFILE_FUNCTION();
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions(4);
 
     attributeDescriptions[0].binding = 0;

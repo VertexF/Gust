@@ -6,6 +6,7 @@
 #include <set>
 
 #include "Core/Logger.h"
+#include "Core/Instrumentor.h"
 
 namespace Gust 
 {
@@ -177,6 +178,7 @@ bool SwapChain::compareSwapFormats(const SwapChain& swapChain) const
 
 void SwapChain::init() 
 {
+    GUST_PROFILE_FUNCTION();
     createSwapchain();
     createImageViews();
     createRenderPass();
@@ -187,6 +189,7 @@ void SwapChain::init()
 
 void SwapChain::createSwapchain() 
 {
+    GUST_PROFILE_FUNCTION();
     SwapChainSupportDetails swapChainSupport = RenderGlobals::getInstance().getDevice()->getSwapChainSupport();
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -245,6 +248,7 @@ void SwapChain::createSwapchain()
 
 void SwapChain::createImageViews()
 {
+    GUST_PROFILE_FUNCTION();
     _swapChainImageViews.resize(_swapChainImages.size());
 
     for (size_t i = 0; i < _swapChainImages.size(); i++) 
@@ -267,6 +271,7 @@ void SwapChain::createImageViews()
 
 void SwapChain::createDepthResources() 
 {
+    GUST_PROFILE_FUNCTION();
     VkFormat depthFormat = findDepthFormat();
     _swapChainDepthFormat = depthFormat;
     VkExtent2D swapChainExtent = getSwapChainExtent();
@@ -313,6 +318,7 @@ void SwapChain::createDepthResources()
 
 void SwapChain::createRenderPass()
 {
+    GUST_PROFILE_FUNCTION();
     VkAttachmentDescription depthAttachment = {};
     depthAttachment.format = findDepthFormat();
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -371,6 +377,7 @@ void SwapChain::createRenderPass()
 
 void SwapChain::createFramebuffers()
 {
+    GUST_PROFILE_FUNCTION();
     _swapChainFramebuffers.resize(getImageCount());
 
     for (size_t i = 0; i < getImageCount(); i++) 
@@ -395,6 +402,7 @@ void SwapChain::createFramebuffers()
 
 void SwapChain::createSyncObjects()
 {
+    GUST_PROFILE_FUNCTION();
     _imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     _renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     _inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -422,6 +430,7 @@ void SwapChain::createSyncObjects()
 
 VkSurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) 
 {
+    GUST_PROFILE_FUNCTION();
     for (const auto& availableFormat : availableFormats)
     {
         if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -433,6 +442,7 @@ VkSurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(const std::vector<VkSurfac
 
 VkPresentModeKHR SwapChain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) 
 {
+    GUST_PROFILE_FUNCTION();
     for (const auto &availablePresentMode : availablePresentModes)
     {
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -448,6 +458,7 @@ VkPresentModeKHR SwapChain::chooseSwapPresentMode(const std::vector<VkPresentMod
 
 VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) 
 {
+    GUST_PROFILE_FUNCTION();
     if (capabilities.currentExtent.width != UINT64_MAX) 
     {
         return capabilities.currentExtent;

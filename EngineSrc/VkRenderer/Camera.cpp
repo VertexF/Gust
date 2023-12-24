@@ -1,7 +1,10 @@
 #include "Camera.h"
 
-#include "glm/gtc/matrix_transform.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "Core/TimeStep.h"
+#include "Core/Instrumentor.h"
+
 #include "Events/Input.h"
 #include "Events/KeyCodes.h"
 
@@ -16,15 +19,18 @@ _position(glm::vec3(0.f)), _rotation(glm::vec3(0.f))
 
 void Camera::setOrthographicalProjection(float left, float right, float top, float bottom, float near, float far) 
 {
+    GUST_PROFILE_FUNCTION();
     _projectionMatrix = glm::orthoRH_ZO(left, right, bottom, top, near, far);
 }
 void Camera::setPerspectiveProjection(float fovy, float aspect, float near, float far) 
 {
+    GUST_PROFILE_FUNCTION();
     _projectionMatrix = glm::perspective(fovy, aspect, near, far);
 }
 
 void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up) 
 {
+    GUST_PROFILE_FUNCTION();
     _viewMatrix = glm::lookAtRH(position, direction, up);
 
     const glm::vec3 w(glm::normalize(direction));
@@ -47,11 +53,13 @@ void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3
 
 void Camera::setViewTarget(glm::vec3 position, glm::vec3 target, glm::vec3 up) 
 {
+    GUST_PROFILE_FUNCTION();
     setViewDirection(position, target - position, up);
 }
 
 void Camera::setViewYXZ(glm::vec3 position, glm::vec3 rotation) 
 {
+    GUST_PROFILE_FUNCTION();
     const float c3 = glm::cos(rotation.z);
     const float s3 = glm::sin(rotation.z);
     const float c2 = glm::cos(rotation.x);
@@ -103,6 +111,7 @@ const glm::mat4& Camera::getView() const
 
 const glm::mat4& Camera::getViewProjection() const 
 {
+    GUST_PROFILE_FUNCTION();
     return getProjection() * getView();
 }
 
@@ -113,6 +122,7 @@ const glm::mat4& Camera::getInverseView() const
 
 const glm::vec3 Camera::getPosition() const
 {
+    GUST_PROFILE_FUNCTION();
     return _inverseViewMatrix[3];
 }
 

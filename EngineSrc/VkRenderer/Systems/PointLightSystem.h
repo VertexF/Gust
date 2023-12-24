@@ -3,9 +3,10 @@
 
 #include <vector>
 
+#include "Entity/GameObject.h"
+
 #include "VkRenderer/Camera.h"
 #include "VkRenderer/FrameInfo.h"
-#include "VkRenderer/GameObject.h"
 #include "VkRenderer/Pipeline.h"
 
 namespace Gust

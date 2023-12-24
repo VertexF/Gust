@@ -1,13 +1,12 @@
 #ifndef GAME_2D_HDR
 #define GAME_2D_HDR
 
+#include "Entity/GameObject.h"
 #include "Events/Event.h"
 #include "Events/MouseEvent.h"
 #include "Events/KeyEvent.h"
 #include "Core/TimeStep.h"
 #include "Core/Layer.h"
-//#include "Renderer/Vulkan.h"
-//#include "Renderer/RenderingEngine.h"
 
 #include "VkRenderer/VulkanDemo.h"
 
@@ -29,9 +28,11 @@ public:
     bool keyReleased(Gust::ReleasedKeyEvent& ent);
     bool mouseReleased(Gust::MouseButtonReleasedEvent& ent);
 private:
-    //Gust::Vulkan* _vulkan;
-    //Gust::Renderer* _renderingEngine;
+    void loadGameObjects();
+
     Gust::VulkanDemo* _vulkanDemo;
+
+    std::unordered_map<uint32_t, Gust::GameObject> _gameObjects;
 
     int _mouseButton = 0;
 };

@@ -2,7 +2,7 @@
 #define CAMERA_CONTROLLER_HDR
 
 #include "Core/TimeStep.h"
-#include "GameObject.h"
+#include "Entity/GameObject.h"
 
 namespace Gust 
 {

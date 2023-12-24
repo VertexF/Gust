@@ -4,6 +4,8 @@
 #include <fstream>
 
 #include "Core/Logger.h"
+#include "Core/Instrumentor.h"
+
 #include "Model.h"
 
 namespace Gust
@@ -29,6 +31,7 @@ void Pipeline::bind(VkCommandBuffer commandBuffer)
 
 void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo)
 {
+    GUST_PROFILE_FUNCTION();
     configInfo.inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     configInfo.inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     configInfo.inputAssembly.primitiveRestartEnable = VK_FALSE;
@@ -102,6 +105,7 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo &configInfo)
 
 void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo)
 {
+    GUST_PROFILE_FUNCTION();
     configInfo.colourBlendAttachment.blendEnable = VK_TRUE;
     configInfo.colourBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | 
                                                       VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -115,6 +119,7 @@ void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo)
 
 std::vector<char> Pipeline::readFile(const char* filepath)
 {
+    GUST_PROFILE_FUNCTION();
     std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 
     if (file.is_open() == false)
@@ -135,6 +140,7 @@ std::vector<char> Pipeline::readFile(const char* filepath)
 
 void Pipeline::createGraphicsPipeline(const char* vertexFilePath, const char* fragFilePath, const PipelineConfigInfo& config)
 {
+    GUST_PROFILE_FUNCTION();
     std::vector<char> vertexFileContents = readFile(vertexFilePath);
     std::vector<char> fragFileContents = readFile(fragFilePath);
 
@@ -200,12 +206,14 @@ void Pipeline::createGraphicsPipeline(const char* vertexFilePath, const char* fr
 
 void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
 {
+    GUST_PROFILE_FUNCTION();
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shaderModuleCreateInfo.codeSize = code.size();
     shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     VkResult result = vkCreateShaderModule(RenderGlobals::getInstance().getDevice()->getLogicalDevice(), &shaderModuleCreateInfo, nullptr, shaderModule);
+    GUST_CORE_ASSERT(result != VK_SUCCESS, "Could not create shader models.");
 }
 
 } //GUST

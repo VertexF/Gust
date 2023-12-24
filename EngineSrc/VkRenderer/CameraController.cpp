@@ -2,6 +2,10 @@
 
 #include <limits>
 
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "Core/Instrumentor.h"
+
 #include "Events/Input.h"
 #include "Events/KeyCodes.h"
 
@@ -9,6 +13,7 @@ namespace Gust
 {
 void CameraController::moveInPlaneXZ(TimeStep timestep, GameObject& gameObjects)
 {
+    GUST_PROFILE_FUNCTION();
     glm::vec3 rotate{ 0.f };
 
     if (Input::isKeyPressed(TEMP_KEY_RIGHT)) 
